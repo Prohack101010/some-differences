@@ -3,72 +3,77 @@ package options;
 #if desktop
 import Discord.DiscordClient;
 #end
-import flash.text.TextField;
-import flixel.FlxG;
-import flixel.FlxSprite;
 import flixel.addons.display.FlxGridOverlay;
-import flixel.group.FlxGroup.FlxTypedGroup;
-import flixel.math.FlxMath;
-import flixel.text.FlxText;
-import flixel.util.FlxColor;
 import lime.utils.Assets;
 import flixel.FlxSubState;
-import flash.text.TextField;
-import flixel.FlxG;
-import flixel.FlxSprite;
 import flixel.util.FlxSave;
 import haxe.Json;
-import flixel.tweens.FlxEase;
-import flixel.tweens.FlxTween;
-import flixel.util.FlxTimer;
 import flixel.input.keyboard.FlxKey;
 import flixel.graphics.FlxGraphic;
+import options.OptionsState;
 import Controls;
 
-using StringTools;
 
 class OptionsState extends MusicBeatState
 {
-	var options:Array<String> = ['Note Colors', #if TOUCH_CONTROLS 'Mobile Controls' #else 'Controls' #end, 'Adjust Delay and Combo', 'Graphics', 'Visuals and UI', 'Gameplay' #if (TOUCH_CONTROLS || mobile) , 'Mobile Options' #end];
+	#if TOUCH_CONTROLS
+	var options:Array<String> = ['Note Colors', 'Controls', 'Adjust Delay and Combo', 'Graphics', 'Visuals and UI', 'Gameplay', 'Mobile Options'];
+	#else
+	var options:Array<String> = ['Note Colors', 'Controls', 'Adjust Delay and Combo', 'Graphics', 'Visuals and UI', 'Gameplay'];
+	#end
 	private var grpOptions:FlxTypedGroup<Alphabet>;
 	private static var curSelected:Int = 0;
+	public static var stateType:Int = 0;
+	public static var onPlayState:Bool = false;
 	public static var menuBG:FlxSprite;
 
 	function openSelectedSubstate(label:String) {
-		#if TOUCH_CONTROLS
-	    persistentUpdate = false;
-	    if (label != "Adjust Delay and Combo") removeMobilePad();
-	    #end
+		persistentUpdate = false;
+		#if TOUCH_CONTROLS if (label != "Adjust Delay and Combo") removeVirtualPad(); #end
 		switch(label) {
 			case 'Note Colors':
-				openSubState(new options.NotesSubState());
+				if (ClientPrefs.data.useRGB) openSubState(new options.NotesColorSubState());
+				else openSubState(new options.NotesSubState());
 			case 'Controls':
 				openSubState(new options.ControlsSubState());
-			#if TOUCH_CONTROLS
+			#if TOUCH_CONTROLS 
 			case 'Mobile Controls':
-    			openSubState(new MobileControlSelectSubState());
-    		#end
+				openSubState(new MobileControlSelectSubState());
+			#end
 			case 'Graphics':
 				openSubState(new options.GraphicsSettingsSubState());
 			case 'Visuals and UI':
 				openSubState(new options.VisualsUISubState());
 			case 'Gameplay':
 				openSubState(new options.GameplaySettingsSubState());
-			#if (TOUCH_CONTROLS || mobile)
+			#if TOUCH_CONTROLS
 			case 'Mobile Options':
-			    openSubState(new MobileOptionsSubState());
+				openSubState(new MobileOptionsSubState());
 			#end
 			case 'Adjust Delay and Combo':
-				LoadingState.loadAndSwitchState(new options.NoteOffsetState());
+				CustomSwitchState.switchMenus('NoteOffset');
 		}
 	}
 
 	var selectorLeft:Alphabet;
 	var selectorRight:Alphabet;
+	public static var inOptionsMenu:Bool = false; //this one needs to fix notes
 
 	override function create() {
+		Paths.clearStoredMemory();
+		Paths.clearUnusedMemory();
+		
+		inOptionsMenu = true;
+
+		PlayState.isPixelStage = false; //Disable Pixel Stage Shit
+
 		#if desktop
 		DiscordClient.changePresence("Options Menu", null);
+		#end
+
+		#if TOUCH_CONTROLS
+		if (ClientPrefs.data.mobilePadAlpha != 0)
+			options = ['Note Colors', 'Mobile Controls', 'Adjust Delay and Combo', 'Graphics', 'Visuals and UI', 'Gameplay', 'Mobile Options'];
 		#end
 
 		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
@@ -76,7 +81,7 @@ class OptionsState extends MusicBeatState
 		bg.updateHitbox();
 
 		bg.screenCenter();
-		bg.antialiasing = ClientPrefs.globalAntialiasing;
+		bg.antialiasing = ClientPrefs.data.antialiasing;
 		add(bg);
 
 		grpOptions = new FlxTypedGroup<Alphabet>();
@@ -94,19 +99,20 @@ class OptionsState extends MusicBeatState
 		add(selectorLeft);
 		selectorRight = new Alphabet(0, 0, '<', true);
 		add(selectorRight);
-
-		changeSelection();
-		ClientPrefs.saveSettings();
 		
 		var tipText:FlxText = new FlxText(10, 12, 0, 'Press E to Go In Extra Key Return Menu', 16);
 		tipText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		tipText.borderSize = 2;
 		tipText.scrollFactor.set();
 		add(tipText);
-		
-		#if TOUCH_CONTROLS
-		addMobilePad("UP_DOWN", "A_B_E");
-		#end
+
+		changeSelection();
+		ClientPrefs.saveSettings();
+
+		changeSelection();
+		ClientPrefs.saveSettings();
+
+		#if TOUCH_CONTROLS addVirtualPad("UP_DOWN", "A_B_E"); #end
 
 		super.create();
 	}
@@ -115,38 +121,52 @@ class OptionsState extends MusicBeatState
 		super.closeSubState();
 		ClientPrefs.saveSettings();
 		#if TOUCH_CONTROLS
-		removeMobilePad();
-		addMobilePad("UP_DOWN", "A_B_E");
-		persistentUpdate = true;
+		removeVirtualPad();
+		addVirtualPad("UP_DOWN", "A_B_E");
+		if (ClientPrefs.data.mobilePadAlpha != 0) //pls work
+			options = ['Note Colors', 'Mobile Controls', 'Adjust Delay and Combo', 'Graphics', 'Visuals and UI', 'Gameplay', 'Mobile Options'];
+		else
+			options = ['Note Colors', 'Controls', 'Adjust Delay and Combo', 'Graphics', 'Visuals and UI', 'Gameplay', 'Mobile Options'];
 		#end
+		persistentUpdate = true;
 	}
 
 	override function update(elapsed:Float) {
 		super.update(elapsed);
 
-		if (controls.UI_UP_P) {
+		if (controls.UI_UP_P)
 			changeSelection(-1);
-		}
-		if (controls.UI_DOWN_P) {
+		if (controls.UI_DOWN_P)
 			changeSelection(1);
-		}
-
-		if (controls.BACK) {
-			FlxG.sound.play(Paths.sound('cancelMenu'));
-			MusicBeatState.switchState(new MainMenuState());
-		}
-
-		if (controls.ACCEPT) {
-			openSelectedSubstate(options[curSelected]);
-		}
 		
-		#if TOUCH_CONTROLS
-		if (mobilePad.buttonE.justPressed) {
-			removeMobilePad();
+		if (controls.BACK) {
+			inOptionsMenu = false;
+			if (OptionsState.stateType == 2)
+				MusicBeatState.switchState(new FreeplayStateNF());
+			else if (OptionsState.stateType == 1)
+				MusicBeatState.switchState(new FreeplayStateNOVA());
+			else if (OptionsState.stateType == 3 || onPlayState) {
+				StageData.loadDirectory(PlayState.SONG); //I forgot to add this -_-
+				LoadingState.loadAndSwitchState(new PlayState());
+				FlxG.sound.music.volume = 0;
+			}
+			else
+				CustomSwitchState.switchMenus('MainMenu');
+			FlxG.sound.play(Paths.sound('cancelMenu'));
+			onPlayState = false;
+			stateType = 0;
+		}
+
+		#if TOUCH_CONTROLS 
+		if (_virtualpad.buttonE.justPressed) {
 			persistentUpdate = false;
+			removeVirtualPad();
 			openSubState(new MobileExtraControl());
 		}
 		#end
+
+		if (controls.ACCEPT)
+			openSelectedSubstate(options[curSelected]);
 	}
 	
 	function changeSelection(change:Int = 0) {

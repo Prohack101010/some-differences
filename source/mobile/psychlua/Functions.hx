@@ -1,19 +1,13 @@
 package mobile.psychlua;
 
 import lime.ui.Haptic;
-import flixel.util.FlxSave;
 import mobile.backend.TouchFunctions;
-import mobile.objects.MobileControls.ControlsGroup;
-import mobile.objects.MobileControls.Config;
-import FunkinLua.CustomSubstate;
 #if android
 import android.widget.Toast as AndroidToast;
 #end
 
 class MobileFunctions
 {
-	static var config:Config = new Config('saved-controls');
-
 	public static function implement(funk:FunkinLua)
 	{
 		#if LUA_ALLOWED
@@ -42,48 +36,48 @@ class MobileFunctions
 		});
 		#end
 
-		#if LUAMPAD_ALLOWED
+		#if LUAVPAD_ALLOWED
 		//OMG
-		Lua_helper.add_callback(lua, 'mobilePadPressed', function(buttonPostfix:String):Bool
+		Lua_helper.add_callback(lua, 'virtualPadPressed', function(buttonPostfix:String):Bool
 		{
-			return PlayState.checkMPadPress(buttonPostfix, 'pressed');
+			return PlayState.checkVPadPress(buttonPostfix, 'pressed');
 		});
 
-		Lua_helper.add_callback(lua, 'mobilePadJustPressed', function(buttonPostfix:String):Bool
+		Lua_helper.add_callback(lua, 'virtualPadJustPressed', function(buttonPostfix:String):Bool
 		{
-			return PlayState.checkMPadPress(buttonPostfix, 'justPressed');
+			return PlayState.checkVPadPress(buttonPostfix, 'justPressed');
 		});
 
-		Lua_helper.add_callback(lua, 'mobilePadReleased', function(buttonPostfix:String):Bool
+		Lua_helper.add_callback(lua, 'virtualPadReleased', function(buttonPostfix:String):Bool
 		{
-			return PlayState.checkMPadPress(buttonPostfix, 'released');
+			return PlayState.checkVPadPress(buttonPostfix, 'released');
 		});
 
-		Lua_helper.add_callback(lua, 'mobilePadJustReleased', function(buttonPostfix:String):Bool
+		Lua_helper.add_callback(lua, 'virtualPadJustReleased', function(buttonPostfix:String):Bool
 		{
-			return PlayState.checkMPadPress(buttonPostfix, 'justReleased');
+			return PlayState.checkVPadPress(buttonPostfix, 'justReleased');
 		});
 
-		Lua_helper.add_callback(lua, 'addMobilePad', function(DPad:String, Action:String, ?addToCustomSubstate:Bool = false, ?posAtCustomSubstate:Int = -1):Void
+		Lua_helper.add_callback(lua, 'addVirtualPad', function(DPad:String, Action:String, ?addToCustomSubstate:Bool = false, ?posAtCustomSubstate:Int = -1):Void
 		{
-			PlayState.instance.makeLuaMobilePad(DPad, Action);
+			PlayState.instance.makeLuaVirtualPad(DPad, Action);
 			if (addToCustomSubstate)
 			{
-				if (PlayState.instance.luaMobilePad != null || !PlayState.instance.members.contains(PlayState.instance.luaMobilePad))
-					CustomSubstate.insertLuaMpad(posAtCustomSubstate);
+				if (PlayState.instance.luaVirtualPad != null || !PlayState.instance.members.contains(PlayState.instance.luaVirtualPad))
+					CustomSubstate.insertLuaVpad(posAtCustomSubstate);
 			}
 			else
-				PlayState.instance.addLuaMobilePad();
+				PlayState.instance.addLuaVirtualPad();
 		});
 
-		Lua_helper.add_callback(lua, 'addMobilePadCamera', function():Void
+		Lua_helper.add_callback(lua, 'addVirtualPadCamera', function():Void
 		{
-			PlayState.instance.addLuaMobilePadCamera();
+			PlayState.instance.addLuaVirtualPadCamera();
 		});
 
-		Lua_helper.add_callback(lua, 'removeMobilePad', function():Void
+		Lua_helper.add_callback(lua, 'removeVirtualPad', function():Void
 		{
-			PlayState.instance.removeLuaMobilePad();
+			PlayState.instance.removeLuaVirtualPad();
 		});
 		#end
 
@@ -93,41 +87,14 @@ class MobileFunctions
 			MusicBeatState.mobilec.visible = enabled;
 		});
 
-		Lua_helper.add_callback(lua, "switchMobileControls", function(?cValue:Int):Void
+		Lua_helper.add_callback(lua, "changeMobileControls", function(?mode:String):Void
 		{
-			PlayState.instance.reloadControls(cValue);
+			PlayState.instance.changeControls(mode);
 		});
 
-		Lua_helper.add_callback(lua, 'getCurMobilecMode', function():String
+		Lua_helper.add_callback(lua, "addMobileControls", function(?mode:String):Void
 		{
-			var curMode:String = '${MobileControls.mode}';
-			return curMode;
-		});
-
-		//better support
-		Lua_helper.add_callback(lua, "changeMobileControls", function(?cValue:Int, ?mode:String, ?action:String):Void
-		{
-			if (mode == null) mode = "NONE";
-			if (action == null) action = "NONE";
-			PlayState.instance.reloadControls(cValue, mode, action);
-		});
-
-		Lua_helper.add_callback(lua, "setMobileControlsPosition", function(?x:Float, ?y:Float):Void
-		{
-			if (MusicBeatState.mobilec != null) {
-				if (x != null) MusicBeatState.mobilec.x = x;
-				if (y != null) MusicBeatState.mobilec.y = y;
-			}
-		});
-
-		Lua_helper.add_callback(lua, "reloadMobileControls", function():Void
-		{
-			PlayState.instance.reloadControls();
-		});
-
-		Lua_helper.add_callback(lua, "addMobileControls", function(?cValue:Int, ?mode:String, ?action:String):Void
-		{
-			PlayState.instance.addControls(cValue, mode, action);
+			PlayState.instance.addControls(mode);
 		});
 
 		Lua_helper.add_callback(lua, "removeMobileControls", function():Void

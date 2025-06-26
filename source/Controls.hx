@@ -1,6 +1,5 @@
 package;
 
-import flixel.FlxG;
 import flixel.input.FlxInput;
 import flixel.input.actions.FlxAction;
 import flixel.input.actions.FlxActionInput;
@@ -10,8 +9,12 @@ import flixel.input.actions.FlxActionSet;
 import flixel.input.gamepad.FlxGamepadButton;
 import flixel.input.gamepad.FlxGamepadInputID;
 import flixel.input.keyboard.FlxKey;
-import flixel.group.FlxGroup;
 
+#if mobile
+import flixel.group.FlxGroup;
+#end
+
+#if (haxe >= "4.0.0")
 enum abstract Action(String) to String from String
 {
 	var UI_UP = "ui_up";
@@ -43,6 +46,40 @@ enum abstract Action(String) to String from String
 	var PAUSE = "pause";
 	var RESET = "reset";
 }
+#else
+@:enum
+abstract Action(String) to String from String
+{
+	var UI_UP = "ui_up";
+	var UI_LEFT = "ui_left";
+	var UI_RIGHT = "ui_right";
+	var UI_DOWN = "ui_down";
+	var UI_UP_P = "ui_up-press";
+	var UI_LEFT_P = "ui_left-press";
+	var UI_RIGHT_P = "ui_right-press";
+	var UI_DOWN_P = "ui_down-press";
+	var UI_UP_R = "ui_up-release";
+	var UI_LEFT_R = "ui_left-release";
+	var UI_RIGHT_R = "ui_right-release";
+	var UI_DOWN_R = "ui_down-release";
+	var NOTE_UP = "note_up";
+	var NOTE_LEFT = "note_left";
+	var NOTE_RIGHT = "note_right";
+	var NOTE_DOWN = "note_down";
+	var NOTE_UP_P = "note_up-press";
+	var NOTE_LEFT_P = "note_left-press";
+	var NOTE_RIGHT_P = "note_right-press";
+	var NOTE_DOWN_P = "note_down-press";
+	var NOTE_UP_R = "note_up-release";
+	var NOTE_LEFT_R = "note_left-release";
+	var NOTE_RIGHT_R = "note_right-release";
+	var NOTE_DOWN_R = "note_down-release";
+	var ACCEPT = "accept";
+	var BACK = "back";
+	var PAUSE = "pause";
+	var RESET = "reset";
+}
+#end
 
 enum Device
 {
@@ -85,6 +122,7 @@ enum KeyboardScheme
  */
 class Controls extends FlxActionSet
 {
+    public static var isInSubstate:Bool = false;
 	var _ui_up = new FlxActionDigital(Action.UI_UP);
 	var _ui_left = new FlxActionDigital(Action.UI_LEFT);
 	var _ui_right = new FlxActionDigital(Action.UI_RIGHT);
@@ -259,8 +297,11 @@ class Controls extends FlxActionSet
 	inline function get_RESET()
 		return _reset.check();
 
+	public static var instance:Controls;
+
 	public function new(name, scheme = None)
 	{
+		instance = this;
 		super(name);
 
 		add(_ui_up);
@@ -297,7 +338,7 @@ class Controls extends FlxActionSet
 
 		setKeyboardScheme(scheme, false);
 	}
-	
+
 	#if TOUCH_CONTROLS
 	public var trackedInputsUI:Array<FlxActionInput> = [];
 	public var trackedInputsNOTES:Array<FlxActionInput> = [];
@@ -328,7 +369,7 @@ class Controls extends FlxActionSet
 
 	public function setHitBox(Hitbox:Hitbox, HitboxOld:HitboxOld)
 	{
-		if (ClientPrefs.hitboxmode == 'Classic') {
+		if (ClientPrefs.data.hitboxmode == 'Classic') {
 			inline forEachBound(Control.NOTE_UP, (action, state) -> addHitboxNOTES(action, HitboxOld.buttonUp, state));
 			inline forEachBound(Control.NOTE_DOWN, (action, state) -> addHitboxNOTES(action, HitboxOld.buttonDown, state));
 			inline forEachBound(Control.NOTE_LEFT, (action, state) -> addHitboxNOTES(action, HitboxOld.buttonLeft, state));
@@ -645,29 +686,37 @@ class Controls extends FlxActionSet
 	 * Sets all actions that pertain to the binder to trigger when the supplied keys are used.
 	 * If binder is a literal you can inline this
 	 */
+	#if !mobile
 	public function bindKeys(control:Control, keys:Array<FlxKey>)
 	{
 		var copyKeys:Array<FlxKey> = keys.copy();
 		for (i in 0...copyKeys.length) {
-			if(i == NONE) copyKeys.remove(i);
+			if(i == FlxKey.NONE) copyKeys.remove(i);
 		}
 
 		inline forEachBound(control, (action, state) -> addKeys(action, copyKeys, state));
 	}
 
-	/**
-	 * Sets all actions that pertain to the binder to trigger when the supplied keys are used.
-	 * If binder is a literal you can inline this
-	 */
 	public function unbindKeys(control:Control, keys:Array<FlxKey>)
 	{
 		var copyKeys:Array<FlxKey> = keys.copy();
 		for (i in 0...copyKeys.length) {
-			if(i == NONE) copyKeys.remove(i);
+			if(i == FlxKey.NONE) copyKeys.remove(i);
 		}
 
 		inline forEachBound(control, (action, _) -> removeKeys(action, copyKeys));
 	}
+	#else
+	public function bindKeys(control:Control, keys:Array<FlxKey>)
+	{
+		inline forEachBound(control, (action, state) -> addKeys(action, keys, state));
+	}
+
+	public function unbindKeys(control:Control, keys:Array<FlxKey>)
+	{
+		inline forEachBound(control, (action, _) -> removeKeys(action, keys));
+	}
+	#end
 
 	inline static function addKeys(action:FlxActionDigital, keys:Array<FlxKey>, state:FlxInputState)
 	{

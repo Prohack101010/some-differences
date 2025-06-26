@@ -1,9 +1,5 @@
-import flixel.FlxG;
-import flixel.FlxSprite;
 import flixel.FlxSubState;
-import flixel.util.FlxColor;
 
-using StringTools;
 
 class ResetScoreSubState extends MusicBeatSubstate
 {
@@ -31,7 +27,7 @@ class ResetScoreSubState extends MusicBeatSubstate
 		if(week > -1) {
 			name = WeekData.weeksLoaded.get(WeekData.weeksList[week]).weekName;
 		}
-		name += ' (' + CoolUtil.difficulties[difficulty] + ')?';
+		name += ' (' + Difficulty.getString(difficulty) + ')?';
 
 		bg = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		bg.alpha = 0;
@@ -69,11 +65,9 @@ class ResetScoreSubState extends MusicBeatSubstate
 		noText.x += 200;
 		add(noText);
 		updateOptions();
-		
-		#if TOUCH_CONTROLS
-        addMobilePad("LEFT_RIGHT", "A_B");
-        addMobilePadCamera();
-        #end
+		FlxG.sound.play(Paths.sound('scrollMenu'));
+
+		cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
 	}
 
 	override function update(elapsed:Float)
@@ -97,14 +91,37 @@ class ResetScoreSubState extends MusicBeatSubstate
 			close();
 		} else if(controls.ACCEPT) {
 			if(onYes) {
-				if(week == -1) {
-					Highscore.resetSong(song, difficulty);
-				} else {
-					Highscore.resetWeek(WeekData.weeksList[week], difficulty);
-				}
+				if(week == -1) Highscore.resetSong(song, difficulty);
+				else Highscore.resetWeek(WeekData.weeksList[week], difficulty);
 			}
 			FlxG.sound.play(Paths.sound('cancelMenu'), 1);
 			close();
+		}
+		
+		if(FlxG.mouse.overlaps(yesText))
+		{
+			if (!onYes) FlxG.sound.play(Paths.sound('scrollMenu'));
+			onYes = true;
+			updateOptions();
+			if (FlxG.mouse.justPressed) {
+				if(onYes) {
+					if(week == -1) Highscore.resetSong(song, difficulty);
+					else Highscore.resetWeek(WeekData.weeksList[week], difficulty);
+				}
+				FlxG.sound.play(Paths.sound('cancelMenu'), 1);
+				close();
+			}
+		}
+
+		if(FlxG.mouse.overlaps(noText))
+		{
+			if (onYes) FlxG.sound.play(Paths.sound('scrollMenu'));
+			onYes = false;
+			updateOptions();
+			if (FlxG.mouse.justPressed) {
+				FlxG.sound.play(Paths.sound('cancelMenu'), 1);
+				close();
+			}
 		}
 		super.update(elapsed);
 	}

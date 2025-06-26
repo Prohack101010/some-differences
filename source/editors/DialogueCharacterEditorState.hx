@@ -3,14 +3,7 @@ package editors;
 #if desktop
 import Discord.DiscordClient;
 #end
-import flixel.FlxG;
-import flixel.FlxSprite;
 import flixel.addons.display.FlxGridOverlay;
-import flixel.addons.transition.FlxTransitionableState;
-import flixel.group.FlxGroup.FlxTypedGroup;
-import flixel.math.FlxMath;
-import flixel.text.FlxText;
-import flixel.util.FlxColor;
 import flixel.addons.ui.FlxInputText;
 import flixel.addons.ui.FlxUI9SliceSprite;
 import flixel.addons.ui.FlxUI;
@@ -22,18 +15,15 @@ import flixel.ui.FlxButton;
 import openfl.net.FileReference;
 import openfl.events.Event;
 import openfl.events.IOErrorEvent;
-import flash.net.FileFilter;
+import openfl.net.FileFilter;
 import haxe.Json;
 import DialogueBoxPsych;
-import flixel.FlxCamera;
-import flixel.group.FlxSpriteGroup;
 import lime.system.Clipboard;
 import Alphabet;
 #if sys
 import sys.io.File;
 #end
 
-using StringTools;
 
 class DialogueCharacterEditorState extends MusicBeatState
 {
@@ -101,14 +91,14 @@ class DialogueCharacterEditorState extends MusicBeatState
 		box = new FlxSprite(70, 370);
 		box.frames = Paths.getSparrowAtlas('speech_bubble');
 		box.scrollFactor.set();
-		box.antialiasing = ClientPrefs.globalAntialiasing;
+		box.antialiasing = ClientPrefs.data.antialiasing;
 		box.animation.addByPrefix('normal', 'speech bubble normal', 24);
 		box.animation.addByPrefix('center', 'speech bubble middle', 24);
 		box.animation.play('normal', true);
 		box.setGraphicSize(Std.int(box.width * 0.9));
 		box.updateHitbox();
 		hudGroup.add(box);
-
+		
 		TIP_TEXT_MAIN = #if TOUCH_CONTROLS
 			'\nX - Reset Camera
 			\nY - Toggle Speech Bubble
@@ -176,10 +166,10 @@ class DialogueCharacterEditorState extends MusicBeatState
 		updateCharTypeBox();
 
 		#if TOUCH_CONTROLS
-		addMobilePad("DIALOGUE_PORTRAIT", "DIALOGUE_PORTRAIT");
-		addMobilePadCamera();
+		addVirtualPad("DIALOGUE_PORTRAIT", "DIALOGUE_PORTRAIT");
+		addVirtualPadCamera();
 		#end
-		
+
 		super.create();
 	}
 
@@ -474,9 +464,12 @@ class DialogueCharacterEditorState extends MusicBeatState
 			offsetLoopText.text = 'Loop: ' + animShit.loop_offsets;
 			offsetIdleText.text = 'Idle: ' + animShit.idle_offsets;
 		}
+		
+		final buttonW:String = #if TOUCH_CONTROLS 'Up' #else 'W' #end;
+		final buttonS:String = #if TOUCH_CONTROLS 'Down' #else 'S' #end;
 
 		curAnim = 0;
-		animText.text = 'Animation: ' + character.jsonFile.animations[curAnim].anim + ' (' + (curAnim + 1) +' / ' + character.jsonFile.animations.length + ') - Press W or S to scroll';
+		animText.text = 'Animation: ' + character.jsonFile.animations[curAnim].anim + ' (' + (curAnim + 1) +' / ' + character.jsonFile.animations.length + ') - Press $buttonW or $buttonS to scroll';
 
 		#if desktop
 		// Updating Discord Rich Presence
@@ -551,7 +544,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 			FlxG.sound.muteKeys = TitleState.muteKeys;
 			FlxG.sound.volumeDownKeys = TitleState.volumeDownKeys;
 			FlxG.sound.volumeUpKeys = TitleState.volumeUpKeys;
-			if((#if TOUCH_CONTROLS mobilePad.buttonA.justPressed || #end FlxG.keys.justPressed.SPACE) && UI_mainbox.selected_tab_id == 'Character') {
+			if((#if TOUCH_CONTROLS _virtualpad.buttonA.justPressed || #end FlxG.keys.justPressed.SPACE) && UI_mainbox.selected_tab_id == 'Character') {
 				character.playAnim(character.jsonFile.animations[curAnim].anim);
 				daText.resetDialogue();
 				updateTextBox();
@@ -560,7 +553,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 			//lots of Ifs lol get trolled
 			var offsetAdd:Int = 1;
 			var speed:Float = 300;
-			if(#if TOUCH_CONTROLS mobilePad.buttonZ.pressed || #end FlxG.keys.pressed.SHIFT) {
+			if(#if TOUCH_CONTROLS _virtualpad.buttonZ.pressed || #end FlxG.keys.pressed.SHIFT) {
 				speed = 1200;
 				offsetAdd = 10;
 			}
@@ -581,16 +574,16 @@ class DialogueCharacterEditorState extends MusicBeatState
 				var moved:Bool = false;
 				var animShit:DialogueAnimArray = character.dialogueAnimations.get(curSelectedAnim);
 				var controlArrayLoop:Array<Bool> = [
-					FlxG.keys.justPressed.A #if TOUCH_CONTROLS || mobilePad.buttonLeft2.justPressed #end,
-					FlxG.keys.justPressed.W #if TOUCH_CONTROLS || mobilePad.buttonUp2.justPressed #end,
-					FlxG.keys.justPressed.D #if TOUCH_CONTROLS || mobilePad.buttonRight2.justPressed #end,
-					FlxG.keys.justPressed.S #if TOUCH_CONTROLS || mobilePad.buttonDown2.justPressed #end
+					FlxG.keys.justPressed.A #if TOUCH_CONTROLS || _virtualpad.buttonLeft2.justPressed #end,
+					FlxG.keys.justPressed.W #if TOUCH_CONTROLS || _virtualpad.buttonUp2.justPressed #end,
+					FlxG.keys.justPressed.D #if TOUCH_CONTROLS || _virtualpad.buttonRight2.justPressed #end,
+					FlxG.keys.justPressed.S #if TOUCH_CONTROLS || _virtualpad.buttonDown2.justPressed #end
 				];
 				var controlArrayIdle:Array<Bool> = [
-					FlxG.keys.justPressed.LEFT #if TOUCH_CONTROLS || mobilePad.buttonLeft.justPressed #end,
-					FlxG.keys.justPressed.UP #if TOUCH_CONTROLS || mobilePad.buttonUp.justPressed #end,
-					FlxG.keys.justPressed.RIGHT #if TOUCH_CONTROLS || mobilePad.buttonRight.justPressed #end,
-					FlxG.keys.justPressed.DOWN #if TOUCH_CONTROLS || mobilePad.buttonDown.justPressed #end
+					FlxG.keys.justPressed.LEFT #if TOUCH_CONTROLS || _virtualpad.buttonLeft.justPressed #end,
+					FlxG.keys.justPressed.UP #if TOUCH_CONTROLS || _virtualpad.buttonUp.justPressed #end,
+					FlxG.keys.justPressed.RIGHT #if TOUCH_CONTROLS || _virtualpad.buttonRight.justPressed #end,
+					FlxG.keys.justPressed.DOWN #if TOUCH_CONTROLS || _virtualpad.buttonDown.justPressed #end
 				];
 				for (i in 0...controlArrayLoop.length) {
 					if(controlArrayLoop[i]) {
@@ -629,7 +622,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 				camGame.zoom += elapsed * camGame.zoom;
 				if(camGame.zoom > 1) camGame.zoom = 1;
 			}
-			if(#if TOUCH_CONTROLS mobilePad.buttonY.justPressed || #end FlxG.keys.justPressed.H) {
+			if(#if TOUCH_CONTROLS _virtualpad.buttonY.justPressed || #end FlxG.keys.justPressed.H) {
 				if(UI_mainbox.selected_tab_id == 'Animations') {
 					currentGhosts++;
 					if(currentGhosts > 2) currentGhosts = 0;
@@ -642,7 +635,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 					hudGroup.visible = !hudGroup.visible;
 				}
 			}
-			if(#if TOUCH_CONTROLS mobilePad.buttonX.justPressed || #end FlxG.keys.justPressed.R) {
+			if(#if TOUCH_CONTROLS _virtualpad.buttonX.justPressed || #end FlxG.keys.justPressed.R) {
 				camGame.zoom = 1;
 				mainGroup.setPosition(0, 0);
 				hudGroup.visible = true;
@@ -674,8 +667,11 @@ class DialogueCharacterEditorState extends MusicBeatState
 					if(curAnim < 0) curAnim = character.jsonFile.animations.length - 1;
 					else if(curAnim >= character.jsonFile.animations.length) curAnim = 0;
 					
+					final buttonW:String = #if TOUCH_CONTROLS 'Up' #else 'W' #end;
+					final buttonS:String = #if TOUCH_CONTROLS 'Down' #else 'S' #end;
+					
 					character.playAnim(character.jsonFile.animations[curAnim].anim);
-					animText.text = 'Animation: ' + character.jsonFile.animations[curAnim].anim + ' (' + (curAnim + 1) +' / ' + character.jsonFile.animations.length + ') - Press W or S to scroll';
+					animText.text = 'Animation: ' + character.jsonFile.animations[curAnim].anim + ' (' + (curAnim + 1) +' / ' + character.jsonFile.animations.length + ') - Press $buttonW or $buttonS to scroll';
 				}
 				lastTab = UI_mainbox.selected_tab_id;
 				currentGhosts = 0;
@@ -685,8 +681,8 @@ class DialogueCharacterEditorState extends MusicBeatState
 			{
 				var negaMult:Array<Int> = [1, -1];
 				var controlAnim:Array<Bool> = [
-					FlxG.keys.justPressed.W #if TOUCH_CONTROLS || mobilePad.buttonUp.justPressed #end,
-					FlxG.keys.justPressed.S #if TOUCH_CONTROLS || mobilePad.buttonDown.justPressed #end
+					FlxG.keys.justPressed.W #if TOUCH_CONTROLS || _virtualpad.buttonUp.justPressed #end,
+					FlxG.keys.justPressed.S #if TOUCH_CONTROLS || _virtualpad.buttonDown.justPressed #end
 				];
 
 				if(controlAnim.contains(true))
@@ -703,12 +699,14 @@ class DialogueCharacterEditorState extends MusicBeatState
 							}
 						}
 					}
-					animText.text = 'Animation: ' + character.jsonFile.animations[curAnim].anim + ' (' + (curAnim + 1) +' / ' + character.jsonFile.animations.length + ') - Press W or S to scroll';
+					final buttonW:String = #if TOUCH_CONTROLS 'Up' #else 'W' #end;
+					final buttonS:String = #if TOUCH_CONTROLS 'Down' #else 'S' #end;
+					animText.text = 'Animation: ' + character.jsonFile.animations[curAnim].anim + ' (' + (curAnim + 1) +' / ' + character.jsonFile.animations.length + ') - Press $buttonW or $buttonS to scroll';
 				}
 			}
 
-			if(#if TOUCH_CONTROLS mobilePad.buttonB.justPressed || #end FlxG.keys.justPressed.ESCAPE) {
-				MusicBeatState.switchState(new editors.MasterEditorMenu());
+			if(#if TOUCH_CONTROLS _virtualpad.buttonB.justPressed || #end FlxG.keys.justPressed.ESCAPE) {
+				CustomSwitchState.switchMenus('MasterEditor');
 				FlxG.sound.playMusic(Paths.music('freakyMenu'), 1);
 				transitioning = true;
 			}
@@ -802,8 +800,8 @@ class DialogueCharacterEditorState extends MusicBeatState
 			var splittedImage:Array<String> = imageInputText.text.trim().split('_');
 			var characterName:String = splittedImage[0].toLowerCase().replace(' ', '');
 
-			#if mobile
-			StorageUtil.saveContent(characterName + ".json", data);
+			#if !FILE_DIALOG_FOR_MOBILE
+			StorageUtil.saveContent("$characterName.json", data);
 			#else
 			_file = new FileReference();
 			_file.addEventListener(Event.COMPLETE, onSaveComplete);

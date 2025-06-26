@@ -1,27 +1,24 @@
 package;
 
-import flixel.FlxG;
-
-using StringTools;
 
 class Highscore
 {
-	#if (haxe >= "4.0.0")
-	public static var weekScores:Map<String, Int> = new Map();
-	public static var songScores:Map<String, Int> = new Map();
-	public static var songRating:Map<String, Float> = new Map();
-	#else
 	public static var weekScores:Map<String, Int> = new Map();
 	public static var songScores:Map<String, Int> = new Map<String, Int>();
 	public static var songRating:Map<String, Float> = new Map<String, Float>();
-	#end
-
+	public static var songTimes:Map<String, String> = new Map<String, String>();
+	public static var songNoteMs:Map<String, Array<Float>> = new Map<String, Array<Float>>();
+	public static var songNoteTime:Map<String, Array<Float>> = new Map<String, Array<Float>>();
+	public static var songDetails:Map<String, Array<Dynamic>> = new Map<String, Array<Dynamic>>();
 
 	public static function resetSong(song:String, diff:Int = 0):Void
 	{
 		var daSong:String = formatSong(song, diff);
 		setScore(daSong, 0);
+		setTime(daSong, 'N/A');
 		setRating(daSong, 0);
+		setMsGroup(daSong, []);
+		setTimeGroup(daSong, []);
 	}
 
 	public static function resetWeek(week:String, diff:Int = 0):Void
@@ -46,19 +43,28 @@ class Highscore
 		return newValue / tempMult;
 	}
 
-	public static function saveScore(song:String, score:Int = 0, ?diff:Int = 0, ?rating:Float = -1):Void
+	public static function saveScore(song:String, score:Int = 0, diff:Int = 0, rating:Float = -1, msGroup:Array<Float>, timeGroup:Array<Float>):Void
 	{
 		var daSong:String = formatSong(song, diff);
 
-		if (songScores.exists(daSong)) {
-			if (songScores.get(daSong) < score) {
+		if (songScores.exists(daSong))
+		{
+			if (songScores.get(daSong) < score)
+			{
 				setScore(daSong, score);
+				setTime(daSong, Date.now().toString());
 				if(rating >= 0) setRating(daSong, rating);
+				setMsGroup(daSong, msGroup);
+				setTimeGroup(daSong, timeGroup);
 			}
 		}
-		else {
+		else
+		{
 			setScore(daSong, score);
+			setTime(daSong, Date.now().toString());
 			if(rating >= 0) setRating(daSong, rating);
+			setMsGroup(daSong, msGroup);
+			setTimeGroup(daSong, timeGroup);
 		}
 	}
 
@@ -71,8 +77,7 @@ class Highscore
 			if (weekScores.get(daWeek) < score)
 				setWeekScore(daWeek, score);
 		}
-		else
-			setWeekScore(daWeek, score);
+		else setWeekScore(daWeek, score);
 	}
 
 	/**
@@ -101,9 +106,25 @@ class Highscore
 		FlxG.save.flush();
 	}
 
+	static function setMsGroup(song:String, group:Array<Float>):Void
+	{
+		// Reminder that I don't need to format this song, it should come formatted!
+		songNoteMs.set(song, group);
+		FlxG.save.data.songNoteMs = songNoteMs;
+		FlxG.save.flush();
+	}
+
+	static function setTimeGroup(song:String, group:Array<Float>):Void
+	{
+		// Reminder that I don't need to format this song, it should come formatted!
+		songNoteTime.set(song, group);
+		FlxG.save.data.songNoteTime = songNoteTime;
+		FlxG.save.flush();
+	}
+
 	public static function formatSong(song:String, diff:Int):String
 	{
-		return Paths.formatToSongPath(song) + CoolUtil.getDifficultyFilePath(diff);
+		return Paths.formatToSongPath(song) + Difficulty.getFilePath(diff);
 	}
 
 	public static function getScore(song:String, diff:Int):Int
@@ -113,6 +134,14 @@ class Highscore
 			setScore(daSong, 0);
 
 		return songScores.get(daSong);
+	}
+
+	static function setTime(song:String, time:String):Void
+	{
+		// Reminder that I don't need to format this song, it should come formatted!
+		songTimes.set(song, time);
+		FlxG.save.data.songTimes = songTimes;
+		FlxG.save.flush();
 	}
 
 	public static function getRating(song:String, diff:Int):Float
@@ -133,19 +162,60 @@ class Highscore
 		return weekScores.get(daWeek);
 	}
 
+	public static function getTime(song:String, diff:Int):String
+	{
+		var daSong:String = formatSong(song, diff);
+		if (!songTimes.exists(daSong)){
+			setTime(daSong, 'N/A');
+		}
+
+		return songTimes.get(daSong);
+	}
+
+	public static function getMsGroup(song:String, diff:Int):Array<Float>
+	{
+		var daSong:String = formatSong(song, diff);
+		if (!songNoteMs.exists(daSong)){
+			setMsGroup(daSong, []);
+		}
+		return songNoteMs.get(daSong);
+	}
+
+	public static function getTimeGroup(song:String, diff:Int):Array<Float>
+	{
+		var daSong:String = formatSong(song, diff);
+		if (!songNoteTime.exists(daSong)){
+			setTimeGroup(daSong, []);
+		}
+		return songNoteTime.get(daSong);
+	}
+
+	public static function getDetails(song:String, diff:Int):Dynamic
+	{
+		var daSong:String = formatSong(song, diff);
+		if (!songDetails.exists(daSong)) setDetails(daSong, []);
+		return songDetails.get(daSong);
+	}
+
+	static function setDetails(song:String, group:Array<Dynamic>):Void
+	{
+		// Reminder that I don't need to format this song, it should come formatted!
+		songDetails.set(song, group);
+		FlxG.save.data.songDetails = songDetails;
+		FlxG.save.flush();
+	}
+
 	public static function load():Void
 	{
 		if (FlxG.save.data.weekScores != null)
-		{
 			weekScores = FlxG.save.data.weekScores;
-		}
 		if (FlxG.save.data.songScores != null)
-		{
 			songScores = FlxG.save.data.songScores;
-		}
 		if (FlxG.save.data.songRating != null)
-		{
 			songRating = FlxG.save.data.songRating;
-		}
+		if (FlxG.save.data.songTimes != null)
+			songTimes = FlxG.save.data.songTimes;
+		if (FlxG.save.data.songDetails != null)
+			songDetails = FlxG.save.data.songDetails;
 	}
 }

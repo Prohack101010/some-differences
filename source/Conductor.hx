@@ -17,15 +17,14 @@ typedef BPMChangeEvent =
 
 class Conductor
 {
-	public static var bpm:Float = 100;
+	public static var bpm(default, set):Float = 100;
 	public static var crochet:Float = ((60 / bpm) * 1000); // beats in milliseconds
 	public static var stepCrochet:Float = crochet / 4; // steps in milliseconds
-	public static var songPosition:Float=0;
-	public static var lastSongPos:Float;
+	public static var songPosition:Float = 0;
 	public static var offset:Float = 0;
 
 	//public static var safeFrames:Int = 10;
-	public static var safeZoneOffset:Float = (ClientPrefs.safeFrames / 60) * 1000; // is calculated in create(), is safeFrames in milliseconds
+	public static var safeZoneOffset:Float = (ClientPrefs.data.safeFrames / 60) * 1000; // is calculated in create(), is safeFrames in milliseconds
 
 	public static var bpmChangeMap:Array<BPMChangeEvent> = [];
 
@@ -33,16 +32,23 @@ class Conductor
 	{
 	}
 
-	public static function judgeNote(note:Note, diff:Float=0):Rating // die
+	public static function judgeNote(arr:Array<Rating>, diff:Float=0):Rating // die
 	{
-		var data:Array<Rating> = PlayState.instance.ratingsData; //shortening cuz fuck u
+		var data:Array<Rating> = arr;
 		for(i in 0...data.length-1) //skips last window (Shit)
-		{
 			if (diff <= data[i].hitWindow)
-			{
 				return data[i];
-			}
-		}
+
+		return data[data.length - 1];
+	}
+	
+	public static function judgeNoteBackend(arr:Array<backend.Rating>, diff:Float=0):backend.Rating // die
+	{
+		var data:Array<backend.Rating> = arr;
+		for(i in 0...data.length-1) //skips last window (Shit)
+			if (diff <= data[i].hitWindow)
+				return data[i];
+
 		return data[data.length - 1];
 	}
 
@@ -146,12 +152,11 @@ class Conductor
 		return (60/bpm)*1000;
 	}
 
-	public static function changeBPM(newBpm:Float)
-	{
-		bpm = newBpm;
-
+	public static function set_bpm(newBPM:Float):Float {
+		bpm = newBPM;
 		crochet = calculateCrochet(bpm);
 		stepCrochet = crochet / 4;
+		return bpm = newBPM;
 	}
 }
 
@@ -170,7 +175,7 @@ class Rating
 		this.name = name;
 		this.image = name;
 		this.counter = name + 's';
-		this.hitWindow = Reflect.field(ClientPrefs, name + 'Window');
+		this.hitWindow = Reflect.field(ClientPrefs.data, name + 'Window');
 		if(hitWindow == null)
 		{
 			hitWindow = 0;

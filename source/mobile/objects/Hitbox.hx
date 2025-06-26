@@ -12,7 +12,7 @@ import openfl.geom.Matrix;
  * @author Mihai Alexandru (M.A. Jigsaw)
  * @modifier KralOyuncu 2010x (ArkoseLabs)
  */
-@:build(mobile.macros.ButtonMacro.createExtraButtons(30))
+@:build(mobile.macros.ButtonMacro.createExtraHitboxButtons(30))
 class Hitbox extends FlxSpriteGroup
 {
 	public var buttonLeft:MobileButton = new MobileButton(0, 0);
@@ -25,75 +25,61 @@ class Hitbox extends FlxSpriteGroup
 	/**
 	 * Create the zone.
 	 */
-	public function new(?CustomMode:String):Void
+	public function new(?MobileCType:String):Void
 	{
 		super();
-		if (ClientPrefs.hitboxhint){
-			hitbox_hint = new FlxSprite(0, (ClientPrefs.hitboxLocation == 'Bottom' && ClientPrefs.extraKeys != 0) ? -150 : 0).loadGraphic(Paths.image('mobile/Hitbox/hitbox_hint'));
+		if (ClientPrefs.data.hitboxhint){
+			hitbox_hint = new FlxSprite(0, ClientPrefs.data.hitboxLocation == 'Bottom' ? -150 : 0).loadGraphic(Paths.image('mobile/Hitbox/hitbox_hint'));
 			add(hitbox_hint);
 		}
-		if ((ClientPrefs.hitboxmode != 'New' && ClientPrefs.hitboxmode != 'Classic' && CustomMode == null) || CustomMode != null){
-			var Custom:String = CustomMode != null ? CustomMode : ClientPrefs.hitboxmode;
+		if ((ClientPrefs.data.hitboxmode != 'New' && ClientPrefs.data.hitboxmode != 'Classic' && MobileCType == null) || MobileCType != null){
+			var Custom:String = MobileCType != null ? MobileCType : ClientPrefs.data.hitboxmode;
 			if (!MobileData.hitboxModes.exists(Custom))
 				throw 'The Custom Hitbox File doesn\'t exists.';
 
-			var currentHint = MobileData.hitboxModes.get(Custom).hints;
-			if (MobileData.hitboxModes.get(Custom).none != null) currentHint = MobileData.hitboxModes.get(Custom).none;
-			if (ClientPrefs.extraKeys == 1 && MobileData.hitboxModes.get(Custom).single != null) currentHint = MobileData.hitboxModes.get(Custom).single;
-			if (ClientPrefs.extraKeys == 2 && MobileData.hitboxModes.get(Custom).double != null) currentHint = MobileData.hitboxModes.get(Custom).double;
-			if (ClientPrefs.extraKeys == 3 && MobileData.hitboxModes.get(Custom).triple != null) currentHint = MobileData.hitboxModes.get(Custom).triple;
-			if (ClientPrefs.extraKeys == 4 && MobileData.hitboxModes.get(Custom).quad != null) currentHint = MobileData.hitboxModes.get(Custom).quad;
-			for (buttonData in currentHint)
+			for (buttonData in MobileData.hitboxModes.get(Custom).buttons)
 			{
+				var location = ClientPrefs.data.hitboxLocation;
 				var buttonX = buttonData.x;
 				var buttonY = buttonData.y;
 				var buttonWidth = buttonData.width;
 				var buttonHeight = buttonData.height;
-				var buttonColor = buttonData.color;
-				var customReturn = buttonData.returnKey;
-				var location = ClientPrefs.hitboxLocation;
 				switch (location) {
 					case 'Top':
 						if (buttonData.topX != null) buttonX = buttonData.topX;
 						if (buttonData.topY != null) buttonY = buttonData.topY;
 						if (buttonData.topWidth != null) buttonWidth = buttonData.topWidth;
 						if (buttonData.topHeight != null) buttonHeight = buttonData.topHeight;
-						if (buttonData.topColor != null) buttonColor = buttonData.topColor;
-						if (buttonData.topReturnKey != null) customReturn = buttonData.topReturnKey;
 					case 'Middle':
 						if (buttonData.middleX != null) buttonX = buttonData.middleX;
 						if (buttonData.middleY != null) buttonY = buttonData.middleY;
 						if (buttonData.middleWidth != null) buttonWidth = buttonData.middleWidth;
 						if (buttonData.middleHeight != null) buttonHeight = buttonData.middleHeight;
-						if (buttonData.middleColor != null) buttonColor = buttonData.middleColor;
-						if (buttonData.middleReturnKey != null) customReturn = buttonData.middleReturnKey;
 					case 'Bottom':
 						if (buttonData.bottomX != null) buttonX = buttonData.bottomX;
 						if (buttonData.bottomY != null) buttonY = buttonData.bottomY;
 						if (buttonData.bottomWidth != null) buttonWidth = buttonData.bottomWidth;
 						if (buttonData.bottomHeight != null) buttonHeight = buttonData.bottomHeight;
-						if (buttonData.bottomColor != null) buttonColor = buttonData.bottomColor;
-						if (buttonData.bottomReturnKey != null) customReturn = buttonData.bottomReturnKey;
 				}
 
 				Reflect.setField(this, buttonData.button,
-					createHint(buttonX, buttonY, buttonWidth, buttonHeight, CoolUtil.colorFromString(buttonColor), customReturn));
+					createHint(buttonX, buttonY, buttonWidth, buttonHeight, CoolUtil.colorFromString(buttonData.color)));
 				add(Reflect.field(this, buttonData.button));
 			}
 		}
-		else if (ClientPrefs.extraKeys == 0){
+		else if (ClientPrefs.data.extraKeys == 0){
 			add(buttonLeft = createHint(0, 0, Std.int(FlxG.width / 4), Std.int(FlxG.height * 1), 0xFFC24B99));
 			add(buttonDown = createHint(FlxG.width / 4, 0, Std.int(FlxG.width / 4), Std.int(FlxG.height * 1), 0xFF00FFFF));
 			add(buttonUp = createHint(FlxG.width / 2, 0, Std.int(FlxG.width / 4), Std.int(FlxG.height * 1), 0xFF12FA05));
 			add(buttonRight = createHint((FlxG.width / 2) + (FlxG.width / 4), 0, Std.int(FlxG.width / 4), Std.int(FlxG.height * 1), 0xFFF9393F));
 		}else{
-			if (ClientPrefs.hitboxLocation == 'Bottom') {
+			if (ClientPrefs.data.hitboxLocation == 'Bottom') {
 				add(buttonLeft = createHint(0, 0, Std.int(FlxG.width / 4), Std.int(FlxG.height * 0.8), 0xFFC24B99));
 				add(buttonDown = createHint(FlxG.width / 4, 0, Std.int(FlxG.width / 4), Std.int(FlxG.height * 0.8), 0xFF00FFFF));
 				add(buttonUp = createHint(FlxG.width / 2, 0, Std.int(FlxG.width / 4), Std.int(FlxG.height * 0.8), 0xFF12FA05));
 				add(buttonRight = createHint((FlxG.width / 2) + (FlxG.width / 4), 0, Std.int(FlxG.width / 4), Std.int(FlxG.height * 0.8), 0xFFF9393F));
 
-				switch (ClientPrefs.extraKeys) {
+				switch (ClientPrefs.data.extraKeys) {
 					case 1:
 						add(buttonExtra1 = createHint(0, (FlxG.height / 5) * 4, FlxG.width, Std.int(FlxG.height / 5), 0xFFFF00));
 					case 2:
@@ -109,13 +95,13 @@ class Hitbox extends FlxSpriteGroup
 						add(buttonExtra3 = createHint(FlxG.width / 4 * 2, (FlxG.height / 5) * 4, Std.int(FlxG.width / 4), Std.int(FlxG.height / 5), 0x0000FF));
 						add(buttonExtra4 = createHint(FlxG.width / 4 * 3, (FlxG.height / 5) * 4, Std.int(FlxG.width / 4), Std.int(FlxG.height / 5), 0x00FF00));
 				}
-			}else if (ClientPrefs.hitboxLocation == 'Top'){// Top
+			}else if (ClientPrefs.data.hitboxLocation == 'Top'){// Top
 				add(buttonLeft = createHint(0, (FlxG.height / 5) * 1, Std.int(FlxG.width / 4), Std.int(FlxG.height * 0.8), 0xFFC24B99));
 				add(buttonDown = createHint(FlxG.width / 4, (FlxG.height / 5) * 1, Std.int(FlxG.width / 4), Std.int(FlxG.height * 0.8), 0xFF00FFFF));
 				add(buttonUp = createHint(FlxG.width / 2, (FlxG.height / 5) * 1, Std.int(FlxG.width / 4), Std.int(FlxG.height * 0.8), 0xFF12FA05));
 				add(buttonRight = createHint((FlxG.width / 2) + (FlxG.width / 4), (FlxG.height / 5) * 1, Std.int(FlxG.width / 4), Std.int(FlxG.height * 0.8), 0xFFF9393F));
 
-				switch (ClientPrefs.extraKeys) {
+				switch (ClientPrefs.data.extraKeys) {
 					case 1:
 						add(buttonExtra1 = createHint(0, 0, FlxG.width, Std.int(FlxG.height / 5), 0xFFFF00));
 					case 2:
@@ -137,7 +123,7 @@ class Hitbox extends FlxSpriteGroup
 				add(buttonUp = createHint(FlxG.width / 5 * 3, 0, Std.int(FlxG.width / 5), Std.int(FlxG.height * 1), 0x00FF00));
 				add(buttonRight = createHint(FlxG.width / 5 * 4 , 0, Std.int(FlxG.width / 5), Std.int(FlxG.height * 1), 0xFF0000));
 
-				switch (ClientPrefs.extraKeys) {
+				switch (ClientPrefs.data.extraKeys) {
 					case 1:
 						add(buttonExtra1 = createHint(FlxG.width / 5 * 2, 0, Std.int(FlxG.width / 5), Std.int(FlxG.height * 1), 0xFFFF00));
 					case 2:
@@ -182,10 +168,10 @@ class Hitbox extends FlxSpriteGroup
 
 	private function createHintGraphic(Width:Int, Height:Int, Color:Int = 0xFFFFFF):BitmapData
 	{
-		var guh:Float = ClientPrefs.hitboxalpha;
+		var guh:Float = ClientPrefs.data.hitboxalpha;
 		var shape:Shape = new Shape();
 		shape.graphics.beginFill(Color);
-		if (ClientPrefs.hitboxtype == "No Gradient")
+		if (ClientPrefs.data.hitboxtype == "No Gradient")
 		{
 			var matrix:Matrix = new Matrix();
 			matrix.createGradientBox(Width, Height, 0, 0, 0);
@@ -194,13 +180,13 @@ class Hitbox extends FlxSpriteGroup
 			shape.graphics.drawRect(0, 0, Width, Height);
 			shape.graphics.endFill();
 		}
-		else if (ClientPrefs.hitboxtype == "No Gradient (Old)")
+		else if (ClientPrefs.data.hitboxtype == "No Gradient (Old)")
 		{
 			shape.graphics.lineStyle(10, Color, 1);
 			shape.graphics.drawRect(0, 0, Width, Height);
 			shape.graphics.endFill();
 		}
-		else if (ClientPrefs.hitboxtype == "Gradient")
+		else if (ClientPrefs.data.hitboxtype == "Gradient")
 		{
 			shape.graphics.lineStyle(3, Color, 1);
 			shape.graphics.drawRect(0, 0, Width, Height);
@@ -217,7 +203,7 @@ class Hitbox extends FlxSpriteGroup
 		return bitmap;
 	}
 
-	private function createHint(X:Float, Y:Float, Width:Int, Height:Int, Color:Int = 0xFFFFFF, ?customReturn:String):MobileButton
+	private function createHint(X:Float, Y:Float, Width:Int, Height:Int, Color:Int = 0xFFFFFF):MobileButton
 	{
 		var hint:MobileButton = new MobileButton(X, Y);
 		hint.loadGraphic(createHintGraphic(Width, Height, Color));
@@ -227,8 +213,8 @@ class Hitbox extends FlxSpriteGroup
 		hint.alpha = 0.00001;
 		hint.onDown.callback = hint.onOver.callback = function()
 		{
-			if (hint.alpha != ClientPrefs.hitboxalpha)
-				hint.alpha = ClientPrefs.hitboxalpha;
+			if (hint.alpha != ClientPrefs.data.hitboxalpha)
+				hint.alpha = ClientPrefs.data.hitboxalpha;
 		}
 		hint.onUp.callback = hint.onOut.callback = function()
 		{
@@ -238,7 +224,6 @@ class Hitbox extends FlxSpriteGroup
 		#if FLX_DEBUG
 		hint.ignoreDrawDebug = true;
 		#end
-		if (customReturn != null) hint.returnedButton = customReturn;
 		return hint;
 	}
 }
@@ -250,8 +235,6 @@ class HitboxOld extends FlxSpriteGroup {
 	public var buttonDown:MobileButton;
 	public var buttonUp:MobileButton;
 	public var buttonRight:MobileButton;
-	public var buttonExtra1:MobileButton;
-	public var buttonExtra2:MobileButton;
 
 	public var orgAlpha:Float = 0.75;
 	public var orgAntialiasing:Bool = true;
@@ -266,39 +249,22 @@ class HitboxOld extends FlxSpriteGroup {
 		buttonDown = new MobileButton(0, 0);
 		buttonUp = new MobileButton(0, 0);
 		buttonRight = new MobileButton(0, 0);
-		buttonExtra1 = new MobileButton(0, 0);
-		buttonExtra2 = new MobileButton(0, 0);
 
 		hitbox = new FlxSpriteGroup();
-		
-		if (ClientPrefs.extraKeys == 0){
-			hitbox.add(add(buttonLeft = createhitbox(0, 0, "left", "mobile/Hitbox/hitbox")));
-			hitbox.add(add(buttonDown = createhitbox(320, 0, "down", "mobile/Hitbox/hitbox")));
-			hitbox.add(add(buttonUp = createhitbox(640, 0, "up", "mobile/Hitbox/hitbox")));
-			hitbox.add(add(buttonRight = createhitbox(960, 0, "right", "mobile/Hitbox/hitbox")));
-		}else{
-			if (ClientPrefs.hitboxLocation == 'Bottom') {
-				switch (ClientPrefs.extraKeys) {
-					case 2:
-						hitbox.add(add(buttonLeft = createhitbox(0, 0, "left", "mobile/Hitbox/hitboxBottom-2")));
-						hitbox.add(add(buttonDown = createhitbox(320, 0, "down", "mobile/Hitbox/hitboxBottom-2")));
-						hitbox.add(add(buttonUp = createhitbox(640, 0, "up", "mobile/Hitbox/hitboxBottom-2")));
-						hitbox.add(add(buttonRight = createhitbox(960, 0, "right", "mobile/Hitbox/hitboxBottom-2")));
-						hitbox.add(add(buttonExtra1 = createhitbox(0, 580, "extra1", "mobile/Hitbox/hitboxBottom-2")));
-						hitbox.add(add(buttonExtra2 = createhitbox(640, 580, "extra2", "mobile/Hitbox/hitboxBottom-2")));
-				}
-			}
-		}
+		hitbox.add(add(buttonLeft = createhitbox(0, 0, "left")));
+		hitbox.add(add(buttonDown = createhitbox(320, 0, "down")));
+		hitbox.add(add(buttonUp = createhitbox(640, 0, "up")));
+		hitbox.add(add(buttonRight = createhitbox(960, 0, "right")));
 
-		var hitbox_hint:FlxSprite = new FlxSprite(0, (ClientPrefs.hitboxLocation == 'Bottom' && ClientPrefs.extraKeys != 0) ? -150 : 0).loadGraphic(Paths.image('mobile/Hitbox/hitbox_hint'));
+		var hitbox_hint:FlxSprite = new FlxSprite(0, 0).loadGraphic(Paths.image('mobile/Hitbox/hitbox_hint'));
 		hitbox_hint.antialiasing = orgAntialiasing;
 		hitbox_hint.alpha = orgAlpha;
 		add(hitbox_hint);
 	}
 
-	public function createhitbox(x:Float = 0, y:Float = 0, frames:String, ?texture:String) {
+	public function createhitbox(x:Float = 0, y:Float = 0, frames:String) {
 		var button = new MobileButton(x, y);
-		button.loadGraphic(FlxGraphic.fromFrame(getFrames(texture).getByName(frames)));
+		button.loadGraphic(FlxGraphic.fromFrame(getFrames().getByName(frames)));
 		button.antialiasing = orgAntialiasing;
 		button.alpha = 0;// sorry but I can't hard lock the hitbox alpha
 		button.onDown.callback = function (){ FlxTween.num(0, 0.75, 0.075, {ease:FlxEase.circInOut}, function(alpha:Float){ button.alpha = alpha;}); };
@@ -307,8 +273,8 @@ class HitboxOld extends FlxSpriteGroup {
 		return button;
 	}
 
-	public function getFrames(?texture:String = 'mobile/Hitbox/hitbox'):FlxAtlasFrames {
-		return Paths.getSparrowAtlas(texture);
+	public function getFrames():FlxAtlasFrames {
+		return Paths.getSparrowAtlas('mobile/Hitbox/hitbox');
 	}
 
 	override public function destroy():Void {

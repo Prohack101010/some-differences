@@ -3,37 +3,22 @@ package options;
 #if desktop
 import Discord.DiscordClient;
 #end
-import flash.text.TextField;
-import flixel.FlxG;
-import flixel.FlxSprite;
+import openfl.text.TextField;
 import flixel.addons.display.FlxGridOverlay;
-import flixel.group.FlxGroup.FlxTypedGroup;
-import flixel.math.FlxMath;
-import flixel.text.FlxText;
-import flixel.util.FlxColor;
 import lime.utils.Assets;
 import flixel.FlxSubState;
-import flash.text.TextField;
-import flixel.FlxG;
-import flixel.FlxSprite;
+import openfl.text.TextField;
 import flixel.util.FlxSave;
 import haxe.Json;
-import flixel.tweens.FlxEase;
-import flixel.tweens.FlxTween;
-import flixel.util.FlxTimer;
 import flixel.input.keyboard.FlxKey;
 import flixel.graphics.FlxGraphic;
 import Controls;
 
-using StringTools;
 
 class ControlsSubState extends MusicBeatSubstate {
 	private static var curSelected:Int = 1;
 	private static var curAlt:Bool = false;
 
-	#if TOUCH_CONTROLS
-	var SelectSubstate = MobileControlSelectSubState;
-	#end
 	private static var defaultKey:String = 'Reset to Default Keys';
 	private var bindLength:Int = 0;
 
@@ -70,6 +55,7 @@ class ControlsSubState extends MusicBeatSubstate {
 	private var grpInputsAlt:Array<AttachedText> = [];
 	var rebindingKey:Bool = false;
 	var nextAccept:Int = 5;
+	#if TOUCH_CONTROLS var SelectSubstate = MobileControlSelectSubState; #end
 
 	public function new() {
 		super();
@@ -77,7 +63,7 @@ class ControlsSubState extends MusicBeatSubstate {
 		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
 		bg.color = 0xFFea71fd;
 		bg.screenCenter();
-		bg.antialiasing = ClientPrefs.globalAntialiasing;
+		bg.antialiasing = ClientPrefs.data.antialiasing;
 		add(bg);
 
 		grpOptions = new FlxTypedGroup<Alphabet>();
@@ -113,11 +99,8 @@ class ControlsSubState extends MusicBeatSubstate {
 			}
 		}
 		changeSelection();
-		
-		#if TOUCH_CONTROLS
-		addMobilePad("FULL", "A_B");
-		addMobilePadCamera();
-		#end
+
+		#if TOUCH_CONTROLS addVirtualPad("FULL", "A_B"); #end
 	}
 
 	var leaving:Bool = false;
@@ -141,6 +124,17 @@ class ControlsSubState extends MusicBeatSubstate {
 				{
 					SelectSubstate.leftArrow.visible = SelectSubstate.rightArrow.visible = SelectSubstate.grpControls.visible = SelectSubstate.exit.visible = SelectSubstate.reset.visible = SelectSubstate.keyboard.visible = SelectSubstate.tipText.visible = true;
 
+					if (SelectSubstate.daChoice == "Pad-Custom")
+					{
+						SelectSubstate.upPozition.visible = true;
+						SelectSubstate.downPozition.visible = true;
+						SelectSubstate.leftPozition.visible = true;
+						SelectSubstate.rightPozition.visible = true;
+						SelectSubstate.extra4Pozition.visible = true;
+						SelectSubstate.extra3Pozition.visible = true;
+						SelectSubstate.extra2Pozition.visible = true;
+						SelectSubstate.extra1Pozition.visible = true;
+					}
 					SelectSubstate.titleText.text = 'Mobile Controls';
 					MobileControlSelectSubState.inControlsSubstate = false; // Not Needed But IDK
 				}

@@ -1,24 +1,13 @@
 package;
 
-#if mobile
-class DiscordClient
-{
-	public function new()
-	{
-	    //Idk
-	}
-}
-#else
-
+#if desktop
 import Sys.sleep;
 import discord_rpc.DiscordRpc;
 
 #if LUA_ALLOWED
-import llua.Lua;
 import llua.State;
 #end
 
-using StringTools;
 
 class DiscordClient
 {
@@ -109,5 +98,13 @@ class DiscordClient
 		});
 	}
 	#end
+}
+#else
+class DiscordClient
+{
+	public function new()
+	{
+		//null
+	}
 }
 #end

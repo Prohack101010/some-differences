@@ -27,9 +27,12 @@ class MobileOptionsSubState extends BaseOptionsMenu
 	#if android
 	var storageTypes:Array<String> = ["EXTERNAL_DATA", "EXTERNAL", "EXTERNAL_EX", "EXTERNAL_NF", "EXTERNAL_OBB", "EXTERNAL_MEDIA", "EXTERNAL_ONLINE"];
 	var externalPaths:Array<String> = StorageUtil.checkExternalPaths(true);
-	final lastStorageType:String = ClientPrefs.storageType;
+	final lastStorageType:String = ClientPrefs.data.storageType;
 	#end
 
+	var MPadSkinOption:Option;
+	var mobilePadTextures:Array<String> = ["VirtualPad", "TouchPad"];
+	var MPadSkin:Array<String>;
 	var HitboxTypes:Array<String>;
 
 	public function new()
@@ -40,15 +43,26 @@ class MobileOptionsSubState extends BaseOptionsMenu
 		title = 'Mobile Options';
 		rpcTitle = 'Mobile Options Menu'; //hi, you can ask what is that, i will answer it's all what you needed lol.
 		#if TOUCH_CONTROLS
-		HitboxTypes = mergeAllTextsNamed('mobile/Hitbox/HitboxModes/hitboxModeList.txt');
+		HitboxTypes = Mods.mergeAllTextsNamed('mobile/Hitbox/HitboxModes/hitboxModeList.txt');
+		if(ClientPrefs.data.mobilePadTexture == 'TouchPad') MPadSkin = Mods.mergeAllTextsNamed('mobile/MobileButton/TouchPad/skinList.txt');
+		else MPadSkin = Mods.mergeAllTextsNamed('mobile/MobileButton/VirtualPad/skinList.txt');
 		#end
 
 	#if TOUCH_CONTROLS
+	MPadSkin.insert(0, "original"); //seperate the original skin from skinList.txt
+	MPadSkinOption = new Option('MobilePad Skin',
+		"Choose MobilePad Skin",
+		'mobilePadSkin',
+		'string',
+		MPadSkin);
+
+	addOption(MPadSkinOption);
+	MPadSkinOption.onChange = resetMobilePad;
+
 	var option:Option = new Option('MobilePad Alpha:',
 		'Changes MobilePad Alpha -cool feature',
 		'mobilePadAlpha',
-		'percent',
-		0.6);
+		'percent');
 	option.scrollSpeed = 1.6;
 	option.minValue = 0;
 	option.maxValue = 1;
@@ -56,16 +70,30 @@ class MobileOptionsSubState extends BaseOptionsMenu
 	option.decimals = 1;
 	option.onChange = () ->
 	{
-		mobilePad.alpha = curOption.getValue();
+		_virtualpad.alpha = curOption.getValue();
 	};
 	addOption(option);
 	super();
 
+	var option:Option = new Option('Colored MobilePad',
+		'If unchecked, disables MobilePad colors\n(can be used to make custom colored MobilePad)',
+		'coloredvpad',
+		'bool');
+	addOption(option);
+	option.onChange = resetMobilePad;
+
+	var option:Option = new Option('MobilePad Texture',
+		'Which MobilePad Texture should use??',
+		'mobilePadTexture',
+		'string',
+		mobilePadTextures);
+	addOption(option);
+	option.onChange = onChangeTexture; //better way
+
 	var option:Option = new Option('Extra Controls',
 		"Allow Extra Controls",
 		'extraKeys',
-		'float',
-		2);
+		'float');
 	option.scrollSpeed = 1.6;
 	option.minValue = 0;
 	option.maxValue = 4;
@@ -77,7 +105,6 @@ class MobileOptionsSubState extends BaseOptionsMenu
 		"Choose Extra Control Location",
 		'hitboxLocation',
 		'string',
-		'Bottom',
 		['Bottom', 'Top', 'Middle']);
 	addOption(option);
 
@@ -87,7 +114,6 @@ class MobileOptionsSubState extends BaseOptionsMenu
 		"Choose your Hitbox Style! -mariomaster",
 		'hitboxmode',
 		'string',
-		'New',
 		HitboxTypes);
 	addOption(option);
 
@@ -95,22 +121,19 @@ class MobileOptionsSubState extends BaseOptionsMenu
 		"Choose how your hitbox should look like.",
 		'hitboxtype',
 		'string',
-		'Gradient',
 		['Gradient', 'No Gradient' , 'No Gradient (Old)']);
 	addOption(option);
 
 	var option:Option = new Option('Hitbox Hint',
 		'Hitbox Hint -I hate this',
 		'hitboxhint',
-		'bool',
-		false);
+		'bool');
 	addOption(option);
 
 	var option:Option = new Option('Hitbox Opacity', //mariomaster was here again -I won't remove this because... Y'know This is here on almost 1 year
 		'Changes hitbox opacity -omg',
 		'hitboxalpha',
-		'float',
-		0.7);
+		'float');
 	option.scrollSpeed = 1.6;
 	option.minValue = 0.0;
 	option.maxValue = 1;
@@ -123,8 +146,7 @@ class MobileOptionsSubState extends BaseOptionsMenu
 	var option:Option = new Option('Wide Screen Mode',
 		'If checked, The game will stetch to fill your whole screen. (WARNING: Can result in bad visuals & break some mods that resizes the game/cameras)',
 		'wideScreen',
-		'bool',
-		false);
+		'bool');
 	option.onChange = () -> FlxG.scaleMode = new MobileScaleMode();
 	addOption(option);
 	#end
@@ -134,7 +156,6 @@ class MobileOptionsSubState extends BaseOptionsMenu
 		'Which folder Psych Engine should use?',
 		'storageType',
 		'string',
-		null,
 		storageTypes);
 		addOption(option);
 	#end
@@ -145,7 +166,7 @@ class MobileOptionsSubState extends BaseOptionsMenu
 	#if android
 	function onStorageChange():Void
 	{
-		File.saveContent(lime.system.System.applicationStorageDirectory + 'storagetype.txt', ClientPrefs.storageType);
+		File.saveContent(lime.system.System.applicationStorageDirectory + 'storagetype.txt', ClientPrefs.data.storageType);
 	}
 	#end
 
@@ -153,7 +174,7 @@ class MobileOptionsSubState extends BaseOptionsMenu
 		super.destroy();
 
 		#if android
-		if (ClientPrefs.storageType != lastStorageType) {
+		if (ClientPrefs.data.storageType != lastStorageType) {
 			onStorageChange();
 			ClientPrefs.saveSettings();
 			CoolUtil.showPopUp('Storage Type has been changed and you needed restart the game!!\nPress OK to close the game.', 'Notice!');
@@ -163,67 +184,31 @@ class MobileOptionsSubState extends BaseOptionsMenu
 	}
 
 	#if TOUCH_CONTROLS
+	function onChangeTexture() {
+		ClientPrefs.saveSettings();
+		if(ClientPrefs.data.mobilePadTexture == 'TouchPad') MPadSkin = Mods.mergeAllTextsNamed('mobile/MobileButton/TouchPad/skinList.txt');
+		else MPadSkin = Mods.mergeAllTextsNamed('mobile/MobileButton/VirtualPad/skinList.txt');
+
+		MPadSkinOption.options = MPadSkin; //Change between TouchPad's and VirtualPad's Note Skin Folders
+		MPadSkin.insert(0, "original");
+
+		//Reset to default if saved noteskin couldnt be found in between folders
+		if(!MPadSkin.contains(ClientPrefs.data.mobilePadSkin))
+		{
+			MPadSkinOption.defaultValue = MPadSkinOption.options[0];
+
+			//these needs to be update the text
+			MPadSkinOption.setValue(MPadSkinOption.options[0]);
+			updateTextFrom(MPadSkinOption);
+			MPadSkinOption.change();
+		}
+		resetMobilePad();
+	}
+
 	function resetMobilePad()
 	{
-		removeMobilePad();
-		addMobilePad("FULL", "A_B_C");
+		removeVirtualPad();
+		addVirtualPad("FULL", "A_B_C");
 	}
 	#end
-
-	inline public static function mergeAllTextsNamed(path:String, ?defaultDirectory:String = null, allowDuplicates:Bool = false)
-	{
-		if(defaultDirectory == null) defaultDirectory = Paths.getPreloadPath();
-		defaultDirectory = defaultDirectory.trim();
-		if(!defaultDirectory.endsWith('/')) defaultDirectory += '/';
-		if(!defaultDirectory.startsWith('assets/')) defaultDirectory = 'assets/$defaultDirectory';
-		var mergedList:Array<String> = [];
-		var paths:Array<String> = directoriesWithFile(defaultDirectory, path);
-		var defaultPath:String = defaultDirectory + path;
-		if(paths.contains(defaultPath))
-		{
-			paths.remove(defaultPath);
-			paths.insert(0, defaultPath);
-		}
-		for (file in paths)
-		{
-			var list:Array<String> = CoolUtil.coolTextFile(file);
-			for (value in list)
-				if((allowDuplicates || !mergedList.contains(value)) && value.length > 0)
-					mergedList.push(value);
-		}
-		return mergedList;
-	}
-
-	static function directoriesWithFile(path:String, fileToFind:String, mods:Bool = true)
-	{
-		var foldersToCheck:Array<String> = [];
-		#if sys
-		if(FileSystem.exists(path + fileToFind))
-		#end
-			foldersToCheck.push(path + fileToFind);
-
-		#if MODS_ALLOWED
-		if(mods)
-		{
-			// Global mods first
-			for(mod in Paths.getGlobalMods())
-			{
-				var folder:String = Paths.mods(mod + '/' + fileToFind);
-				if(FileSystem.exists(folder) && !foldersToCheck.contains(folder)) foldersToCheck.push(folder);
-			}
-
-			// Then "PsychEngine/mods/" main folder
-			var folder:String = Paths.mods(fileToFind);
-			if(FileSystem.exists(folder) && !foldersToCheck.contains(folder)) foldersToCheck.push(Paths.mods(fileToFind));
-
-			// And lastly, the loaded mod's folder
-			if(Paths.currentModDirectory != null && Paths.currentModDirectory.length > 0)
-			{
-				var folder:String = Paths.mods(Paths.currentModDirectory + '/' + fileToFind);
-				if(FileSystem.exists(folder) && !foldersToCheck.contains(folder)) foldersToCheck.push(folder);
-			}
-		}
-		#end
-		return foldersToCheck;
-	}
 }

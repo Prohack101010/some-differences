@@ -21,34 +21,34 @@ class MobileData
 		save = new FlxSave();
 		save.bind('MobileControls', CoolUtil.getSavePath());
 
-		readDirectory(Paths.getPreloadPath('mobile/MobileButton/DPadModes'), dpadModes);
-		readDirectory(Paths.getPreloadPath('mobile/Hitbox/HitboxModes'), hitboxModes);
-		readDirectory(Paths.getPreloadPath('mobile/MobileButton/ActionModes'), actionModes);
+		readDirectory(Paths.getSharedPath('mobile/MobileButton/DPadModes'), dpadModes);
+		readDirectory(Paths.getSharedPath('mobile/Hitbox/HitboxModes'), hitboxModes);
+		readDirectory(Paths.getSharedPath('mobile/MobileButton/ActionModes'), actionModes);
 		#if MODS_ALLOWED
-		for (folder in directoriesWithFile(Paths.getPreloadPath(), 'mobile/MobileButton/'))
+		for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'mobile/MobileButton/'))
 		{
 			readDirectory(Path.join([folder, 'DPadModes']), dpadModes);
 			readDirectory(Path.join([folder, 'ActionModes']), actionModes);
 		}
-		for (folder in directoriesWithFile(Paths.getPreloadPath(), 'mobile/Hitbox/'))
+		for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'mobile/Hitbox/'))
 		{
 			readDirectory(Path.join([folder, 'HitboxModes']), hitboxModes);
 		}
 		#end
 	}
 
-	public static function setMobilePadCustom(mobilePad:MobilePad):Void
+	public static function setVirtualPadCustom(virtualPad:MobilePad):Void
 	{
 		if (save.data.buttons == null)
 		{
 			save.data.buttons = new Array();
-			for (buttons in mobilePad)
+			for (buttons in virtualPad)
 				save.data.buttons.push(FlxPoint.get(buttons.x, buttons.y));
 		}
 		else
 		{
 			var tempCount:Int = 0;
-			for (buttons in mobilePad)
+			for (buttons in virtualPad)
 			{
 				save.data.buttons[tempCount] = FlxPoint.get(buttons.x, buttons.y);
 				tempCount++;
@@ -58,14 +58,14 @@ class MobileData
 		save.flush();
 	}
 
-	public static function getMobilePadCustom(mobilePad:MobilePad):MobilePad
+	public static function getVirtualPadCustom(virtualPad:MobilePad):MobilePad
 	{
 		var tempCount:Int = 0;
 
 		if (save.data.buttons == null)
-			return mobilePad;
+			return virtualPad;
 
-		for (buttons in mobilePad)
+		for (buttons in virtualPad)
 		{
 			if (save.data.buttons[tempCount] != null)
 			{
@@ -75,7 +75,7 @@ class MobileData
 			tempCount++;
 		}
 
-		return mobilePad;
+		return virtualPad;
 	}
 	
 	static function readDirectory(folder:String, map:Dynamic)
@@ -95,39 +95,6 @@ class MobileData
 				map.set(mapKey, json);
 			}
 		}
-	}
-
-	static function directoriesWithFile(path:String, fileToFind:String, mods:Bool = true)
-	{
-		var foldersToCheck:Array<String> = [];
-		#if sys
-		if(FileSystem.exists(path + fileToFind))
-		#end
-			foldersToCheck.push(path + fileToFind);
-
-		#if MODS_ALLOWED
-		if(mods)
-		{
-			// Global mods first
-			for(mod in Paths.getGlobalMods())
-			{
-				var folder:String = Paths.mods(mod + '/' + fileToFind);
-				if(FileSystem.exists(folder) && !foldersToCheck.contains(folder)) foldersToCheck.push(folder);
-			}
-
-			// Then "PsychEngine/mods/" main folder
-			var folder:String = Paths.mods(fileToFind);
-			if(FileSystem.exists(folder) && !foldersToCheck.contains(folder)) foldersToCheck.push(Paths.mods(fileToFind));
-
-			// And lastly, the loaded mod's folder
-			if(Paths.currentModDirectory != null && Paths.currentModDirectory.length > 0)
-			{
-				var folder:String = Paths.mods(Paths.currentModDirectory + '/' + fileToFind);
-				if(FileSystem.exists(folder) && !foldersToCheck.contains(folder)) foldersToCheck.push(folder);
-			}
-		}
-		#end
-		return foldersToCheck;
 	}
 
 	static function set_mode(mode:Int = 3)
@@ -159,13 +126,7 @@ typedef MobileButtonsData =
 
 typedef CustomHitboxData =
 {
-	hints:Array<HitboxData>, //support old jsons
-	//Shitty but works (as said, if it works don't touch)
-	none:Array<HitboxData>,
-	single:Array<HitboxData>,
-	double:Array<HitboxData>,
-	triple:Array<HitboxData>,
-	quad:Array<HitboxData>
+	buttons:Array<HitboxData>
 }
 
 typedef HitboxData =
@@ -177,34 +138,27 @@ typedef HitboxData =
 	width:Int, // the button's Width on screen.
 	height:Int, // the button's Height on screen.
 	color:String, // the button color, default color is white.
-	returnKey:String, // the button return, default return is nothing (please don't add custom return if you don't need).
 	//Top
 	topX:Null<Float>,
 	topY:Null<Float>,
 	topWidth:Null<Int>,
 	topHeight:Null<Int>,
-	topColor:String,
-	topReturnKey:String,
 	//Middle
 	middleX:Null<Float>,
 	middleY:Null<Float>,
 	middleWidth:Null<Int>,
 	middleHeight:Null<Int>,
-	middleColor:String,
-	middleReturnKey:String,
 	//Bottom
 	bottomX:Null<Float>,
 	bottomY:Null<Float>,
 	bottomWidth:Null<Int>,
-	bottomHeight:Null<Int>,
-	bottomColor:String,
-	bottomReturnKey:String
+	bottomHeight:Null<Int>
 }
 
 typedef ButtonsData =
 {
-	button:String, // what MobileButton should be used, must be a valid MobileButton var from MobilePad as a string.
-	graphic:String, // the graphic of the button, usually can be located in the MobilePad xml .
+	button:String, // what MobileButton should be used, must be a valid MobileButton var from VirtualPad as a string.
+	graphic:String, // the graphic of the button, usually can be located in the VirtualPad xml .
 	x:Float, // the button's X position on screen.
 	y:Float, // the button's Y position on screen.
 	color:String, // the button color, default color is white.

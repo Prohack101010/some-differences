@@ -54,7 +54,7 @@ class MobileControlSelectSubState extends MusicBeatSubstate
 			FlxColor.fromRGB(FlxG.random.int(0, 255), FlxG.random.int(0, 255), FlxG.random.int(0, 255))));
 		bg.velocity.set(40, 40);
 		bg.alpha = 0;
-		bg.antialiasing = ClientPrefs.globalAntialiasing;
+		bg.antialiasing = ClientPrefs.data.antialiasing;
 		FlxTween.tween(bg, {alpha: 0.45}, 0.3, {
 			ease: FlxEase.quadOut,
 			onComplete: (twn:FlxTween) ->
@@ -86,7 +86,7 @@ class MobileControlSelectSubState extends MusicBeatSubstate
 		vpad.cameras = [ui];
 		add(vpad);
 
-		hbox = new HitboxOld(0.75, ClientPrefs.globalAntialiasing);
+		hbox = new HitboxOld(0.75, ClientPrefs.data.antialiasing);
 		hbox.visible = false;
 		hbox.cameras = [ui];
 		add(hbox);
@@ -205,12 +205,8 @@ class MobileControlSelectSubState extends MusicBeatSubstate
 		keyboard = new UIButton(exit.x, exit.height + exit.y + 20, "Keyboard", () ->
 		{
 			save();
-			removeMobilePad();
+			removeVirtualPad();
 			leftArrow.visible = rightArrow.visible = grpControls.visible = exit.visible = reset.visible = keyboard.visible = upPozition.visible = downPozition.visible = leftPozition.visible = rightPozition.visible = extra1Pozition.visible = extra2Pozition.visible = extra3Pozition.visible = extra4Pozition.visible = tipText.visible = false;
-			if (daChoice == "Hitbox") {
-				if(ClientPrefs.hitboxmode == 'Classic') hbox.visible = false;
-				else newhbox.visible = false;
-			}
 			titleText.text = 'Controls';
 			inControlsSubstate = true;
 			openSubState(new ControlsSubState());
@@ -242,17 +238,8 @@ class MobileControlSelectSubState extends MusicBeatSubstate
 		}
 		trackbutton();
 	}
-	
-	override function closeSubState() {
-		changeSelection(0);
-		if (daChoice == "Hitbox") {
-			if(ClientPrefs.hitboxmode == 'Classic') hbox.visible = true;
-			else newhbox.visible = true;
-		}
-		super.closeSubState();
-	}
 
-	public function changeSelection(change:Int = 0)
+	function changeSelection(change:Int = 0)
 	{
 		curSelected += change;
 
@@ -323,7 +310,7 @@ class MobileControlSelectSubState extends MusicBeatSubstate
 		}
 		else
 		{
-			if(ClientPrefs.hitboxmode == 'Classic') hbox.visible = true;
+			if(ClientPrefs.data.hitboxmode == 'Classic') hbox.visible = true;
 			else newhbox.visible = true;
 		}
 

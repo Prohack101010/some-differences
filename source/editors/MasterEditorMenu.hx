@@ -3,19 +3,10 @@ package editors;
 #if desktop
 import Discord.DiscordClient;
 #end
-import flixel.FlxG;
-import flixel.FlxSprite;
 import flixel.addons.display.FlxGridOverlay;
-import flixel.addons.transition.FlxTransitionableState;
-import flixel.group.FlxGroup.FlxTypedGroup;
-import flixel.math.FlxMath;
-import flixel.text.FlxText;
-import flixel.util.FlxColor;
 #if MODS_ALLOWED
 import sys.FileSystem;
 #end
-
-using StringTools;
 
 class MasterEditorMenu extends MusicBeatState
 {
@@ -36,6 +27,8 @@ class MasterEditorMenu extends MusicBeatState
 
 	override function create()
 	{
+		super.create();
+
 		FlxG.camera.bgColor = FlxColor.BLACK;
 		#if desktop
 		// Updating Discord Rich Presence
@@ -58,7 +51,7 @@ class MasterEditorMenu extends MusicBeatState
 			grpTexts.add(leText);
 			leText.snapToPosition();
 		}
-		
+
 		#if MODS_ALLOWED
 		var textBG:FlxSprite = new FlxSprite(0, FlxG.height - 42).makeGraphic(FlxG.width, 42, 0xFF000000);
 		textBG.alpha = 0.6;
@@ -68,29 +61,27 @@ class MasterEditorMenu extends MusicBeatState
 		directoryTxt.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER);
 		directoryTxt.scrollFactor.set();
 		add(directoryTxt);
-		
-		for (folder in Paths.getModDirectories())
+
+		for (folder in Mods.getModDirectories())
 		{
 			directories.push(folder);
 		}
 
-		var found:Int = directories.indexOf(Paths.currentModDirectory);
+		var found:Int = directories.indexOf(Mods.currentModDirectory);
 		if(found > -1) curDirectory = found;
 		changeDirectory();
 		#end
 		changeSelection();
 
-		FlxG.mouse.visible = false;
+		#if HIDE_CURSOR FlxG.mouse.visible = false; #end
 
-		#if TOUCH_CONTROLS
-		addMobilePad("FULL", "A_B");
-		#end
-
-		super.create();
+		#if TOUCH_CONTROLS addVirtualPad("FULL", "A_B"); #end
 	}
 
 	override function update(elapsed:Float)
 	{
+		super.update(elapsed);
+
 		if (controls.UI_UP_P)
 		{
 			changeSelection(-1);
@@ -112,7 +103,7 @@ class MasterEditorMenu extends MusicBeatState
 
 		if (controls.BACK)
 		{
-			MusicBeatState.switchState(new MainMenuState());
+			CustomSwitchState.switchMenus('MainMenu');
 		}
 
 		if (controls.ACCEPT)
@@ -129,14 +120,20 @@ class MasterEditorMenu extends MusicBeatState
 				case 'Dialogue Editor':
 					LoadingState.loadAndSwitchState(new DialogueEditorState(), false);
 				case 'Chart Editor'://felt it would be cool maybe
-					LoadingState.loadAndSwitchState(new ChartingState(), false);
+					CustomSwitchState.switchMenus('Charting', true);
+					PlayState.chartingMode = true; // I don't understand why Psych 0.6.3 doesn't have this
 			}
 			FlxG.sound.music.volume = 0;
-			#if PRELOAD_ALL
-			FreeplayState.destroyFreeplayVocals();
+			#if PsychExtended_ExtraFreeplayMenus
+			if (ClientPrefs.data.FreeplayStyle == 'NF')
+				FreeplayStateNF.destroyFreeplayVocals();
+			else if (ClientPrefs.data.FreeplayStyle == 'NovaFlare')
+				FreeplayStateNOVA.destroyFreeplayVocals();
+			else
 			#end
+				FreeplayState.destroyFreeplayVocals();
 		}
-		
+
 		var bullShit:Int = 0;
 		for (item in grpTexts.members)
 		{
@@ -152,7 +149,6 @@ class MasterEditorMenu extends MusicBeatState
 				// item.setGraphicSize(Std.int(item.width));
 			}
 		}
-		super.update(elapsed);
 	}
 
 	function changeSelection(change:Int = 0)
@@ -170,6 +166,8 @@ class MasterEditorMenu extends MusicBeatState
 	#if MODS_ALLOWED
 	function changeDirectory(change:Int = 0)
 	{
+		call('changeDirectory', [change]);
+
 		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
 
 		curDirectory += change;
@@ -178,16 +176,18 @@ class MasterEditorMenu extends MusicBeatState
 			curDirectory = directories.length - 1;
 		if(curDirectory >= directories.length)
 			curDirectory = 0;
-	
+
 		WeekData.setDirectoryFromWeek();
 		if(directories[curDirectory] == null || directories[curDirectory].length < 1)
 			directoryTxt.text = '< No Mod Directory Loaded >';
 		else
 		{
-			Paths.currentModDirectory = directories[curDirectory];
-			directoryTxt.text = '< Loaded Mod Directory: ' + Paths.currentModDirectory + ' >';
+			Mods.currentModDirectory = directories[curDirectory];
+			directoryTxt.text = '< Loaded Mod Directory: ' + Mods.currentModDirectory + ' >';
 		}
 		directoryTxt.text = directoryTxt.text.toUpperCase();
+
+		call('changeDirectoryPost', [change]);
 	}
 	#end
 }

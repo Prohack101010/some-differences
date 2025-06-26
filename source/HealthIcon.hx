@@ -1,9 +1,7 @@
 package;
 
-import flixel.FlxSprite;
 import openfl.utils.Assets as OpenFlAssets;
 
-using StringTools;
 
 class HealthIcon extends FlxSprite
 {
@@ -52,18 +50,22 @@ class HealthIcon extends FlxSprite
 			animation.play(char);
 			this.char = char;
 
-			antialiasing = ClientPrefs.globalAntialiasing;
+			antialiasing = ClientPrefs.data.antialiasing;
 			if(char.endsWith('-pixel')) {
 				antialiasing = false;
 			}
 		}
 	}
 
+	public var autoAdjustOffset:Bool = true;
 	override function updateHitbox()
 	{
 		super.updateHitbox();
-		offset.x = iconOffsets[0];
-		offset.y = iconOffsets[1];
+		if(autoAdjustOffset)
+		{
+			offset.x = iconOffsets[0];
+			offset.y = iconOffsets[1];
+		}
 	}
 
 	public function getCharacter():String {

@@ -3,14 +3,7 @@ package editors;
 #if desktop
 import Discord.DiscordClient;
 #end
-import flixel.FlxG;
-import flixel.FlxSprite;
 import flixel.addons.display.FlxGridOverlay;
-import flixel.addons.transition.FlxTransitionableState;
-import flixel.group.FlxGroup.FlxTypedGroup;
-import flixel.math.FlxMath;
-import flixel.text.FlxText;
-import flixel.util.FlxColor;
 import flixel.addons.ui.FlxInputText;
 import flixel.addons.ui.FlxUI9SliceSprite;
 import flixel.addons.ui.FlxUI;
@@ -22,7 +15,7 @@ import flixel.ui.FlxButton;
 import openfl.net.FileReference;
 import openfl.events.Event;
 import openfl.events.IOErrorEvent;
-import flash.net.FileFilter;
+import openfl.net.FileFilter;
 import haxe.Json;
 import DialogueBoxPsych;
 import lime.system.Clipboard;
@@ -31,7 +24,6 @@ import Alphabet;
 import sys.io.File;
 #end
 
-using StringTools;
 
 class DialogueEditorState extends MusicBeatState
 {
@@ -71,7 +63,7 @@ class DialogueEditorState extends MusicBeatState
 		box = new FlxSprite(70, 370);
 		box.frames = Paths.getSparrowAtlas('speech_bubble');
 		box.scrollFactor.set();
-		box.antialiasing = ClientPrefs.globalAntialiasing;
+		box.antialiasing = ClientPrefs.data.antialiasing;
 		box.animation.addByPrefix('normal', 'speech bubble normal', 24);
 		box.animation.addByPrefix('angry', 'AHH speech bubble', 24);
 		box.animation.addByPrefix('center', 'speech bubble middle', 24);
@@ -108,7 +100,7 @@ class DialogueEditorState extends MusicBeatState
 		add(daText);
 		changeText();
 
-		#if TOUCH_CONTROLS addMobilePad("FULL", "A_B_X_Y"); #end
+		#if TOUCH_CONTROLS addVirtualPad("FULL", "A_B_X_Y"); #end
 
 		super.create();
 	}
@@ -231,7 +223,7 @@ class DialogueEditorState extends MusicBeatState
 		character.y += character.jsonFile.position[1];
 		character.playAnim(); //Plays random animation
 		characterAnimSpeed();
-
+		
 		final buttonW:String = #if TOUCH_CONTROLS 'Up' #else 'W' #end;
 		final buttonS:String = #if TOUCH_CONTROLS 'Down' #else 'S' #end;
 
@@ -283,7 +275,7 @@ class DialogueEditorState extends MusicBeatState
 				if(character.jsonFile.animations.length > 0) {
 					curAnim = 0;
 					if(character.jsonFile.animations.length > curAnim && character.jsonFile.animations[curAnim] != null) {
-						final buttonW:String = #if TOUCH_CONTROLS 'Up' #else 'W' #end;
+					    final buttonW:String = #if TOUCH_CONTROLS 'Up' #else 'W' #end;
 						final buttonS:String = #if TOUCH_CONTROLS 'Down' #else 'S' #end;
 						character.playAnim(character.jsonFile.animations[curAnim].anim, daText.finishedText);
 						animText.text = 'Animation: ' + character.jsonFile.animations[curAnim].anim + ' (' + (curAnim + 1) +' / ' + character.jsonFile.animations.length + ') - Press $buttonW or $buttonS to scroll';
@@ -365,22 +357,22 @@ class DialogueEditorState extends MusicBeatState
 			FlxG.sound.muteKeys = TitleState.muteKeys;
 			FlxG.sound.volumeDownKeys = TitleState.volumeDownKeys;
 			FlxG.sound.volumeUpKeys = TitleState.volumeUpKeys;
-			if(#if TOUCH_CONTROLS mobilePad.buttonY.justPressed || #end FlxG.keys.justPressed.SPACE) {
+			if(#if TOUCH_CONTROLS _virtualpad.buttonY.justPressed || #end FlxG.keys.justPressed.SPACE) {
 				reloadText(false);
 			}
-			if(#if TOUCH_CONTROLS mobilePad.buttonB.justPressed || #end FlxG.keys.justPressed.ESCAPE) {
-				MusicBeatState.switchState(new editors.MasterEditorMenu());
+			if(#if TOUCH_CONTROLS _virtualpad.buttonB.justPressed || #end FlxG.keys.justPressed.ESCAPE) {
+				CustomSwitchState.switchMenus('MasterEditor');
 				FlxG.sound.playMusic(Paths.music('freakyMenu'), 1);
 				transitioning = true;
 			}
 			var negaMult:Array<Int> = [1, -1];
 			var controlAnim:Array<Bool> = [
-				FlxG.keys.justPressed.W #if TOUCH_CONTROLS || mobilePad.buttonUp.justPressed #end,
-				FlxG.keys.justPressed.S #if TOUCH_CONTROLS || mobilePad.buttonDown.justPressed #end
+				FlxG.keys.justPressed.W #if TOUCH_CONTROLS || _virtualpad.buttonUp.justPressed #end,
+				FlxG.keys.justPressed.S #if TOUCH_CONTROLS || _virtualpad.buttonDown.justPressed #end
 			];
 			var controlText:Array<Bool> = [
-				FlxG.keys.justPressed.D #if TOUCH_CONTROLS || mobilePad.buttonRight.justPressed #end,
-				FlxG.keys.justPressed.A #if TOUCH_CONTROLS || mobilePad.buttonLeft.justPressed #end
+				FlxG.keys.justPressed.D #if TOUCH_CONTROLS || _virtualpad.buttonRight.justPressed #end,
+				FlxG.keys.justPressed.A #if TOUCH_CONTROLS || _virtualpad.buttonLeft.justPressed #end
 			];
 			for (i in 0...controlAnim.length) {
 				if(controlAnim[i] && character.jsonFile.animations.length > 0) {
@@ -402,7 +394,7 @@ class DialogueEditorState extends MusicBeatState
 				}
 			}
 
-			if(#if TOUCH_CONTROLS mobilePad.buttonA.justPressed || #end FlxG.keys.justPressed.O) {
+			if(#if TOUCH_CONTROLS _virtualpad.buttonA.justPressed || #end FlxG.keys.justPressed.O) {
 				dialogueFile.dialogue.remove(dialogueFile.dialogue[curSelected]);
 				if(dialogueFile.dialogue.length < 1) //You deleted everything, dumbo!
 				{
@@ -411,7 +403,7 @@ class DialogueEditorState extends MusicBeatState
 					];
 				}
 				changeText();
-			} else if(#if TOUCH_CONTROLS mobilePad.buttonX.justPressed || #end FlxG.keys.justPressed.P) {
+			} else if(#if TOUCH_CONTROLS _virtualpad.buttonX.justPressed || #end FlxG.keys.justPressed.P) {
 				dialogueFile.dialogue.insert(curSelected + 1, copyDefaultLine());
 				changeText(1);
 			}
@@ -547,8 +539,8 @@ class DialogueEditorState extends MusicBeatState
 		var data:String = Json.stringify(dialogueFile, "\t");
 		if (data.length > 0)
 		{
-			#if mobile
-			StorageUtil.saveContent("dialogue" + ".json", data);
+			#if !FILE_DIALOG_FOR_MOBILE
+			StorageUtil.saveContent("$dialogue.json", data);
 			#else
 			_file = new FileReference();
 			_file.addEventListener(Event.COMPLETE, onSaveComplete);

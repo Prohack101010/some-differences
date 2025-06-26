@@ -103,26 +103,25 @@ class MobileControls extends FlxSpriteGroup {
 	var config:Config;
 	var extendConfig:Config;
 
-	public function new(?customControllerValue:Int, ?CustomMode:String, ?CustomAction:String) {
+	public function new(?CustomMode:String) {
 		super();
 
 		config = new Config('saved-controls');
 		extendConfig = new Config('saved-extendControls');
 
 		mode = getModeFromNumber(config.getcontrolmode());
-		if (customControllerValue != null) mode = getModeFromNumber(customControllerValue);
 
 		switch (mode){
 			case MOBILEPAD_RIGHT:
-				initControler(0, CustomMode, CustomAction);
+				initControler(0);
 			case MOBILEPAD_LEFT:
-				initControler(1, CustomMode, CustomAction);
+				initControler(1);
 			case MOBILEPAD_CUSTOM:
-				initControler(2, CustomMode, CustomAction);
+				initControler(2);
 			case DUO:
-				initControler(3, CustomMode, CustomAction);
+				initControler(3);
 			case HITBOX:
-				if(ClientPrefs.hitboxmode == 'Classic') initControler(4);
+				if(ClientPrefs.data.hitboxmode == 'Classic') initControler(4);
 				else initControler(5, CustomMode);
 			case KEYBOARD:
 				// nothing
@@ -130,34 +129,30 @@ class MobileControls extends FlxSpriteGroup {
 		current = new CurrentManager(this);
 	}
 
-	function initControler(vpadMode:Int, ?CustomMode:String, ?CustomAction:String) {
+	function initControler(vpadMode:Int, ?CustomMode:String) {
 		switch (vpadMode){
 			case 0:
-				if (CustomAction != null) vpad = new MobilePad(CustomMode, CustomAction);
-				else vpad = new MobilePad("RIGHT_FULL", "controlExtend");
+				vpad = new MobilePad("RIGHT_FULL", "controlExtend");
 				add(vpad);
 				vpad = extendConfig.loadcustom(vpad);
 			case 1:
-				if (CustomAction != null) vpad = new MobilePad(CustomMode, CustomAction);
-				else vpad = new MobilePad("FULL", "controlExtend");
+				vpad = new MobilePad("FULL", "controlExtend");
 				add(vpad);
 				vpad = extendConfig.loadcustom(vpad);
 			case 2:
-				if (CustomAction != null) vpad = new MobilePad(CustomMode, CustomAction);
-				else vpad = new MobilePad("FULL", "controlExtend");
+				vpad = new MobilePad("FULL", "controlExtend");
 				vpad = config.loadcustom(vpad);
 				add(vpad);
 				vpad = extendConfig.loadcustom(vpad);
 			case 3:
-				if (CustomAction != null) vpad = new MobilePad(CustomMode, CustomAction);
-				else vpad = new MobilePad("DUO", "controlExtend");
+				vpad = new MobilePad("DUO", "controlExtend");
 				add(vpad);
 				vpad = extendConfig.loadcustom(vpad);
 			case 4:
-				hbox = new HitboxOld(0.75, ClientPrefs.globalAntialiasing);
+				hbox = new HitboxOld(0.75, ClientPrefs.data.antialiasing);
 				add(hbox);
 			case 5:
-				if (CustomMode != null || CustomMode != "NONE") newhbox = new Hitbox(CustomMode);
+				if (CustomMode != null) newhbox = new Hitbox(CustomMode);
 				else newhbox = new Hitbox();
 				add(newhbox);
 			default:
@@ -206,7 +201,7 @@ class CurrentManager {
 	public var buttonExtra4:MobileButton;
 
 	public function new(control:MobileControls){
-		if(MobileControls.mode == HITBOX && ClientPrefs.hitboxmode != 'Classic') {
+		if(MobileControls.mode == HITBOX && ClientPrefs.data.hitboxmode != 'Classic') {
 			buttonLeft = control.newhbox.buttonLeft;
 			buttonDown = control.newhbox.buttonDown;
 			buttonUp = control.newhbox.buttonUp;
@@ -215,14 +210,7 @@ class CurrentManager {
 			buttonExtra2 = control.newhbox.buttonExtra2;
 			buttonExtra3 = control.newhbox.buttonExtra3;
 			buttonExtra4 = control.newhbox.buttonExtra4;
-		} else if(MobileControls.mode == HITBOX && ClientPrefs.hitboxmode == 'Classic') { //Classic Hitbox Now Support Shift & Space Buttons
-			buttonLeft = control.hbox.buttonLeft;
-			buttonDown = control.hbox.buttonDown;
-			buttonUp = control.hbox.buttonUp;
-			buttonRight = control.hbox.buttonRight;
-			buttonExtra1 = control.hbox.buttonExtra1;
-			buttonExtra2 = control.hbox.buttonExtra2;
-		} else if (ClientPrefs.hitboxmode != 'Classic' && MobileControls.mode != KEYBOARD) {
+		} else if (ClientPrefs.data.hitboxmode != 'Classic' && MobileControls.mode != KEYBOARD) {
 			buttonLeft = control.vpad.buttonLeft;
 			buttonDown = control.vpad.buttonDown;
 			buttonUp = control.vpad.buttonUp;

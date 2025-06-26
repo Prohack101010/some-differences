@@ -4,7 +4,6 @@ import flixel.input.FlxInput;
 import flixel.input.FlxPointer;
 import flixel.input.IFlxInput;
 import flixel.util.FlxDestroyUtil.IFlxDestroyable;
-import shaders.flixel.system.FlxShader;
 #if mac
 import flixel.input.mouse.FlxMouseButton;
 #end
@@ -157,11 +156,6 @@ class TypedMobileButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 	**/
 	public var parentAlpha(default, set):Float = 1;
 
-	/**
-	 * Custom Button Return (For Easier Lua Support).
-	**/
-	public var returnedButton:String;
-
 	public var statusIndicatorType(default, set):StatusIndicators = ALPHA;
 
 	public var brightShader:ButtonBrightnessShader = new ButtonBrightnessShader();
@@ -199,7 +193,10 @@ class TypedMobileButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 	{
 		super(X, Y);
 
-		loadDefaultGraphic();
+		if (statusIndicatorType == BRIGHTNESS && ClientPrefs.data.mobilePadTexture == 'TouchPad')
+			shader = brightShader;
+		else
+			loadDefaultGraphic();
 
 		onUp = new MobileButtonEvent();
 		onDown = new MobileButtonEvent();
@@ -211,8 +208,10 @@ class TypedMobileButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 		// Since this is a UI element, the default scrollFactor is (0, 0)
 		scrollFactor.set();
 
-		statusAnimations[MobileButton.HIGHLIGHT] = 'normal';
-		labelAlphas[MobileButton.HIGHLIGHT] = 1;
+		if (ClientPrefs.data.mobilePadTexture != 'TouchPad') {
+			statusAnimations[MobileButton.HIGHLIGHT] = 'normal';
+			labelAlphas[MobileButton.HIGHLIGHT] = 1;
+		}
 
 		input = new FlxInput(0);
 	}
@@ -221,8 +220,10 @@ class TypedMobileButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 	{
 		super.graphicLoaded();
 
-		setupAnimation('normal', MobileButton.NORMAL);
-		setupAnimation('pressed', MobileButton.PRESSED);
+		if (ClientPrefs.data.mobilePadTexture != 'TouchPad') {
+			setupAnimation('normal', MobileButton.NORMAL);
+			setupAnimation('pressed', MobileButton.PRESSED);
+		}
 	}
 
 	function loadDefaultGraphic():Void
@@ -248,8 +249,10 @@ class TypedMobileButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 		onOver = FlxDestroyUtil.destroy(onOver);
 		onOut = FlxDestroyUtil.destroy(onOut);
 
-		labelOffsets = FlxDestroyUtil.putArray(labelOffsets);
-		labelAlphas = null;
+		if (ClientPrefs.data.mobilePadTexture != 'TouchPad') {
+			labelOffsets = FlxDestroyUtil.putArray(labelOffsets);
+			labelAlphas = null;
+		}
 		currentInput = null;
 		input = null;
 
@@ -271,7 +274,7 @@ class TypedMobileButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 			#end
 
 			// Trigger the animation only if the button's input status changes.
-			if (lastStatus != status)
+			if (lastStatus != status && ClientPrefs.data.mobilePadTexture != 'TouchPad')
 			{
 				updateStatusAnimation();
 				lastStatus = status;
@@ -291,7 +294,13 @@ class TypedMobileButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 	{
 		super.draw();
 
-		if (_spriteLabel != null && _spriteLabel.visible)
+		if (_spriteLabel != null && _spriteLabel.graphic != null && _spriteLabel.pixels != null && _spriteLabel.visible && ClientPrefs.data.mobilePadTexture == 'TouchPad')
+		{
+			if (_spriteLabel.cameras != cameras)
+				_spriteLabel.cameras = cameras;
+			_spriteLabel.draw();
+		}
+		else if (_spriteLabel != null && _spriteLabel.visible && ClientPrefs.data.mobilePadTexture != 'TouchPad')
 		{
 			_spriteLabel.cameras = cameras;
 			_spriteLabel.draw();
@@ -384,7 +393,12 @@ class TypedMobileButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 
 	public function updateLabelPosition()
 	{
-		if (_spriteLabel != null)
+		if (_spriteLabel != null && ClientPrefs.data.mobilePadTexture == 'TouchPad')
+		{
+			_spriteLabel.x = ((width - _spriteLabel.width) / 2) + (pixelPerfectPosition ? Math.floor(x) : x);
+			_spriteLabel.y = ((height - _spriteLabel.height) / 2) + (pixelPerfectPosition ? Math.floor(y) : y);
+		}
+		else if (_spriteLabel != null && ClientPrefs.data.mobilePadTexture != 'TouchPad')
 		{
 			_spriteLabel.x = (pixelPerfectPosition ? Math.floor(x) : x) + labelOffsets[status].x;
 			_spriteLabel.y = (pixelPerfectPosition ? Math.floor(y) : y) + labelOffsets[status].y;
@@ -468,6 +482,9 @@ class TypedMobileButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 		_spriteLabel = label;
 
 		updateLabelPosition();
+		
+		if (statusIndicatorType == BRIGHTNESS && label != null && brightShader != null && ClientPrefs.data.mobilePadTexture == 'TouchPad')
+			label.shader = brightShader;
 
 		return Value;
 	}
@@ -475,19 +492,35 @@ class TypedMobileButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 	function set_status(Value:Int):Int
 	{
 		status = Value;
-		updateLabelAlpha();
+		if (ClientPrefs.data.mobilePadTexture == 'TouchPad') indicateStatus();
+		else updateLabelAlpha();
 		return status;
 	}
 
 	override function set_alpha(Value:Float):Float
 	{
 		super.set_alpha(Value);
-		updateLabelAlpha();
-		return alpha;
+		if (ClientPrefs.data.mobilePadTexture == 'TouchPad')
+		{
+			if (_spriteLabel != null && canChangeLabelAlpha)
+				_spriteLabel.alpha = alpha == 0 ? 0 : alpha + labelStatusDiff;
+			return Value;
+		}
+		else
+		{
+			updateLabelAlpha();
+			return alpha;
+		}
 	}
 	
 	override function set_visible(Value:Bool):Bool
 	{
+		if (ClientPrefs.data.mobilePadTexture == 'TouchPad')
+		{
+	 		super.set_visible(Value);
+	 		if (_spriteLabel != null)
+	 			_spriteLabel.visible = Value;
+	 	}
 	 	return Value;
 	}
 
@@ -509,6 +542,9 @@ class TypedMobileButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 	{
 		if (_spriteLabel != null)
 	 		_spriteLabel.color = Value;
+	 	
+		if (ClientPrefs.data.mobilePadTexture == 'TouchPad')
+	 		brightShader.color = Value;
 	 	
 	 	super.set_color(Value);
 		return Value;
